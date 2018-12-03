@@ -169,6 +169,16 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
             }
         }
     }
+
+    for (auto cls: *classes) {
+        set_current_class(cls);
+        for (auto feature: *cls->get_features()) {
+            feature->type_check(this);
+            if (errors()) {
+                return;
+            }
+        }
+    }
 }
 
 Class_ ClassTable::get_class(Symbol name) {
@@ -398,4 +408,37 @@ void attr_class::add(ClassTable *p) {
 
     auto &symtab = p->attrs.find(cls->get_name())->second;
     symtab.addid(name, type_decl);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+void method_class::type_check(ClassTable *p) {
+    auto &symtab = p->attrs.find(p->get_class()->get_name())->second;
+    symtab.enterscope();
+
+    for (auto formal: *formals) {
+        auto fc = reinterpret_cast<formal_class*>(formal);
+        if (symtab.probe(fc->name)) {
+            p->semant_error(p->get_class()) << "Duplicated parameter name " << fc->name << " of method " << name << "\n";
+            return;
+        }
+
+        if (p->get_class(fc->type_decl) == nullptr) {
+            return;
+        }
+
+        symtab.addid(fc->name, fc->type_decl);
+    }
+
+    expr->type_check(p);
+    symtab.exitscope();
+    p->get_class(return_type);
+}
+
+void attr_class::type_check(ClassTable *p) {
+    if (p->get_class(type_decl) == nullptr) {
+        return;
+    }
+
+    init->type_check(p);
 }

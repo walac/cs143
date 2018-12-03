@@ -55,6 +55,7 @@ public:
    tree_node *copy()		 { return copy_Feature(); }
    virtual Feature copy_Feature() = 0;
    virtual void add(ClassTable *p) = 0;
+   virtual void type_check(ClassTable *p) = 0;
 
 #ifdef Feature_EXTRAS
    Feature_EXTRAS
@@ -83,6 +84,7 @@ class Expression_class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Expression(); }
    virtual Expression copy_Expression() = 0;
+   virtual Symbol type_check(ClassTable *p) { return nullptr; };
 
 #ifdef Expression_EXTRAS
    Expression_EXTRAS
@@ -197,6 +199,7 @@ public:
    Feature copy_Feature();
    void dump(ostream& stream, int n);
    void add(ClassTable *p) override;
+   void type_check(ClassTable *p) override;
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS
@@ -222,6 +225,7 @@ public:
    Feature copy_Feature();
    void dump(ostream& stream, int n);
    void add(ClassTable *p) override;
+   void type_check(ClassTable *p) override;
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS

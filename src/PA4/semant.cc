@@ -105,10 +105,9 @@ Value *ClassTable::lookup(std::unordered_map<Symbol, SymbolTable<Key, Value>> &s
         }
 
         auto cls = get_class(class_name);
-        class_name = cls->get_name();
+        class_name = cls->get_parent();
     }
 
-    semant_error() << "Symbol " << key << " was not found\n";
     return nullptr;
 }
 
@@ -159,6 +158,9 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     for (auto cls: classes_) {
         attrs[cls.second->get_name()].enterscope();
         methods[cls.second->get_name()].enterscope();
+    }
+
+    for (auto cls: classes_) {
         set_current_class(cls.second);
         for (auto feature: *cls.second->get_features()) {
             feature->add(this);
@@ -172,7 +174,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 Class_ ClassTable::get_class(Symbol name) {
     auto it = classes_.find(name);
     if (it == classes_.end()) {
-        semant_error() << "Class " << name << "was not found\n";
+        semant_error() << "Class " << name << " was not found\n";
         return nullptr;
     }
 
@@ -384,13 +386,16 @@ void method_class::add(ClassTable *p) {
 void attr_class::add(ClassTable *p) {
     auto cls = p->get_class();
 
+    if (*name == *self) {
+        p->semant_error(cls) << "'self' cannot be the name of an attribute\n";
+        return;
+    }
+
     if (p->lookup(p->attrs, cls->get_name(), name) != nullptr) {
         p->semant_error(cls) << "Attribute redefinition: " << name << "\n";
         return;
     }
 
     auto &symtab = p->attrs.find(cls->get_name())->second;
-    auto typ = p->get_class(type_decl);
-    if (typ == nullptr) return;
-    symtab.addid(name, typ->get_name());
+    symtab.addid(name, type_decl);
 }

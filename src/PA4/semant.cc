@@ -181,6 +181,21 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     }
 }
 
+bool ClassTable::leq(Symbol derived, Symbol ancestor) {
+    while (*derived != *No_class) {
+        if (*derived == *ancestor) {
+            return true;
+        }
+        auto cls = get_class(derived);
+        if (cls == nullptr) {
+            return false;
+        }
+        derived = cls->get_parent();
+    }
+
+    return false;
+}
+
 Class_ ClassTable::get_class(Symbol name) {
     auto it = classes_.find(name);
     if (it == classes_.end()) {
@@ -442,3 +457,25 @@ void attr_class::type_check(ClassTable *p) {
 
     init->type_check(p);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+Symbol assign_class::type_check(ClassTable *p) {
+    auto typ = p->lookup(p->attrs, p->get_class()->get_name(), name);
+    if (typ == nullptr) {
+        p->semant_error(p->get_class()) << "Variable " << name << " is not defined\n";
+        return nullptr;
+    }
+
+    auto expr_type = expr->type_check(p);
+    if (!expr_type) return nullptr;
+
+    if (!p->leq(expr_type, typ)) {
+        p->semant_error(p->get_class()) << "Invalid expression assignment: " << typ << " = " << expr_type << "\n";
+        return nullptr;
+    }
+
+    set_type(typ);
+    return typ;
+}
+

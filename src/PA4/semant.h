@@ -120,6 +120,7 @@ public:
     ostream& semant_error(Symbol filename, tree_node *t);
 	Class_ get_class(Symbol name);
 	Class_ get_class() { return cls_; }
+    bool leq(Symbol derived, Symbol ancestor);
 
 	template<typename Key, typename Value>
 	Value *lookup(std::unordered_map<Symbol, SymbolTable<Key, Value>> &symtab, Symbol class_name, Symbol key);

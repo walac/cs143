@@ -722,9 +722,11 @@ Symbol isvoid_class::type_check(ClassTable *p) {
 }
 
 Symbol no_expr_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(No_type);
+    return get_type();
 }
 
 Symbol object_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(Object);
+    return Object;
 }

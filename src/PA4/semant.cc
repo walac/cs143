@@ -834,6 +834,10 @@ Symbol no_expr_class::type_check(ClassTable *p) {
 }
 
 Symbol object_class::type_check(ClassTable *p) {
+    if (p->lookup(p->attrs, p->get_class()->get_name(), name) == nullptr) {
+        p->semant_error(p->get_class()) << "Variable " << name << " not found\n";
+        return nullptr;
+    }
     set_type(Object);
     return Object;
 }

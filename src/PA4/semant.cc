@@ -633,6 +633,14 @@ Symbol branch_class::type_check(ClassTable *p) {
 }
 
 Symbol loop_class::type_check(ClassTable *p) {
+    auto pred_type = pred->type_check(p);
+    if (pred_type == nullptr) {
+        return nullptr;
+    }
+    if (*pred_type != *Bool) {
+        p->semant_error(p->get_class()) << "Expression must be boolean\n";
+        return nullptr;
+    }
     set_type(Object);
     return get_type();
 }

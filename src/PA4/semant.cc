@@ -161,9 +161,21 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
         methods[cls.second->get_name()].enterscope();
     }
 
-    for (auto cls: classes_) {
-        set_current_class(cls.second);
-        for (auto feature: *cls.second->get_features()) {
+    vector<Symbol> predefined_classes{Object, IO, Int, Bool, Str};
+    for (auto cls_name: predefined_classes) {
+        auto cls = get_class(cls_name);
+        set_current_class(cls);
+        for (auto feature: *cls->get_features()) {
+            feature->add(this);
+            if (errors()) {
+                return;
+            }
+        }
+    }
+
+    for (auto cls: *classes) {
+        set_current_class(cls);
+        for (auto feature: *cls->get_features()) {
             feature->add(this);
             if (errors()) {
                 return;

@@ -563,7 +563,7 @@ Symbol static_dispatch_class ::type_check(ClassTable *p)  {
     }
 
     Symbol ret;
-	if (*type_name == *SELF_TYPE) {
+	if (*method->return_type == *SELF_TYPE) {
 		ret = t0;
 	} else {
 		ret = method->return_type;
@@ -603,7 +603,7 @@ Symbol dispatch_class ::type_check(ClassTable *p)  {
     });
 
     Symbol ret;
-	if (*type_name == *SELF_TYPE) {
+	if (*method->return_type == *SELF_TYPE) {
 		ret = t0;
 	} else {
 		ret = method->return_type;

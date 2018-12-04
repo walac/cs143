@@ -226,6 +226,33 @@ bool ClassTable::has_cycle(Class_ cls) {
     return false;
 }
 
+Symbol ClassTable::find_common_ancestor(Symbol a, Symbol b) {
+    auto ca = get_class(a);
+    if (ca == nullptr) {
+        return nullptr;
+    }
+
+    auto cb = get_class(b);
+    if (cb == nullptr) {
+        return nullptr;
+    }
+
+    std::unordered_set<Symbol> s{ca->get_name()};
+    for (auto class_name = ca->get_parent(); *class_name != *No_class; class_name = ca->get_parent()) {
+        s.insert(class_name);
+        ca = get_class(class_name);
+    }
+
+    for (auto class_name = cb->get_name(); *class_name != *No_class; class_name = cb->get_parent()) {
+        cb = get_class(class_name);
+        if (s.find(class_name) != s.end()) {
+            return class_name;
+        }
+    }
+
+    return nullptr;
+}
+
 void ClassTable::install_basic_classes() {
 
     // The tree package uses these globals to annotate the classes built below.
@@ -479,3 +506,222 @@ Symbol assign_class::type_check(ClassTable *p) {
     return typ;
 }
 
+Symbol static_dispatch_class ::type_check(ClassTable *p)  {
+    auto method = p->lookup(p->methods, type_name, name);
+    if (method == nullptr) {
+        p->semant_error(p->get_class()) << "Method " << name << " not found\n";
+        return nullptr;
+    }
+
+    auto t0 = expr->type_check(p);
+    if (t0 == nullptr) {
+        return nullptr;
+    }
+
+    if (!p->leq(t0, type_name)) {
+        p->semant_error(p->get_class()) << "Incompatible types between the call expression and " << type_name << "\n";
+        return nullptr;
+    }
+
+    if (actual->len() != method->formals->len()) {
+        p->semant_error(p->get_class()) << "Arguments number mismatc\n";
+        return nullptr;
+    }
+
+    auto enda = end(*actual);
+    auto it = mismatch(begin(*actual), enda, begin(*method->formals), [=](Expression expr, Formal formal) -> bool {
+        auto typ = expr->type_check(p);
+        if (typ == nullptr) {
+            return true;
+        }
+
+        auto f = reinterpret_cast<formal_class *>(formal);
+
+        if (!p->leq(typ, f->type_decl)) {
+            p->semant_error(p->get_class()) << "Invalid argument type for " << f->name << " in method call\n";
+            return true;;
+        }
+
+        return false;
+    });
+
+    if (it.first != enda) {
+        return nullptr;
+    }
+
+    Symbol ret;
+	if (*type_name == *SELF_TYPE) {
+		ret = t0;
+	} else {
+		ret = method->return_type;
+	}
+	set_type(ret);
+	return ret;
+}
+
+Symbol dispatch_class ::type_check(ClassTable *p)  {
+	auto t0 = expr->type_check(p);
+	if (t0 == nullptr) {
+		return nullptr;
+	}
+
+	auto t0p = *t0 == *SELF_TYPE ? p->get_class()->get_name() : t0;
+	auto method = p->lookup(p->methods, t0p, name);
+    if (method == nullptr) {
+        p->semant_error(p->get_class()) << "Method " << name << " not found\n";
+        return nullptr;
+    }
+
+    auto enda = end(*actual);
+    auto it = mismatch(begin(*actual), enda, begin(*method->formals), [=](Expression expr, Formal formal) -> bool {
+        auto typ = expr->type_check(p);
+        if (typ == nullptr) {
+            return true;
+        }
+
+        auto f = reinterpret_cast<formal_class *>(formal);
+
+        if (!p->leq(typ, f->type_decl)) {
+            p->semant_error(p->get_class()) << "Invalid argument type for " << f->name << " in method call\n";
+            return true;;
+        }
+
+        return false;
+    });
+
+    Symbol ret;
+	if (*type_name == *SELF_TYPE) {
+		ret = t0;
+	} else {
+		ret = method->return_type;
+	}
+	set_type(ret);
+	return ret;
+}
+
+Symbol cond_class::type_check(ClassTable *p) {
+    auto pred_type = pred->type_check(p);
+    if (pred_type == nullptr) {
+        return nullptr;
+    }
+
+    if (*pred_type != *Bool) {
+        p->semant_error(p->get_class()) << "Expression is not boolean\n";
+        return nullptr;
+    }
+
+    auto then_type = then_exp->type_check(p);
+    if (then_type == nullptr) {
+        return nullptr;
+    }
+
+    auto else_type = else_exp->type_check(p);
+    if (else_type == nullptr) {
+        return else_type;
+    }
+
+    auto ret = p->find_common_ancestor(then_type, else_type);
+    set_type(ret);
+    return ret;
+}
+
+Symbol branch_class::type_check(ClassTable *p) {
+    if (p->get_class(type_decl) == nullptr) {
+        return nullptr;
+    }
+    return expr->type_check(p);
+}
+
+Symbol loop_class::type_check(ClassTable *p) {
+    set_type(Object);
+    return get_type();
+}
+
+Symbol typcase_class::type_check(ClassTable *p) {
+    if (expr->type_check(p) == nullptr) {
+        return nullptr;
+    }
+    set_type(Object);
+    return get_type();
+}
+
+Symbol block_class::type_check(ClassTable *p) {
+    Symbol ret = nullptr;
+    for (auto expr: *body) {
+        ret = expr->type_check(p);
+        if (ret == nullptr) {
+            return nullptr;
+        }
+    }
+
+    set_type(ret);
+    return ret;
+}
+
+Symbol let_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol plus_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol sub_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol mul_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol divide_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol neg_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol lt_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol eq_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol leq_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol comp_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol int_const_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol bool_const_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol string_const_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol new__class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol isvoid_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol no_expr_class::type_check(ClassTable *p) {
+    return nullptr;
+}
+
+Symbol object_class::type_check(ClassTable *p) {
+    return nullptr;
+}

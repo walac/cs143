@@ -748,14 +748,20 @@ Symbol eq_class::type_check(ClassTable *p) {
 }
 
 Symbol leq_class::type_check(ClassTable *p) {
-    if (bin_expr_check(p, e1, e2) != nullptr) {
+    if (bin_expr_check(p, e1, e2, Int) != nullptr) {
         set_type(Bool);
     }
     return Bool;
 }
 
 Symbol comp_class::type_check(ClassTable *p) {
-    return nullptr;
+    auto type = e1->type_check(p);
+    if (*type != *Int) {
+        p->semant_error(p->get_class()) << "Expression must be Int\n";
+        return nullptr;
+    }
+    set_type(type);
+    return type;
 }
 
 Symbol int_const_class::type_check(ClassTable *p) {
@@ -774,11 +780,26 @@ Symbol string_const_class::type_check(ClassTable *p) {
 }
 
 Symbol new__class::type_check(ClassTable *p) {
-    return nullptr;
+    auto tp = *type_name == *SELF_TYPE ? p->get_class()->get_name() : type_name;
+    if (p->get_class(tp) == nullptr) {
+        p->semant_error(p->get_class()) << "Type " << type_name << " doesn't exist\n";
+        return nullptr;
+    }
+    set_type(tp);
+    return tp;
 }
 
 Symbol isvoid_class::type_check(ClassTable *p) {
-    return nullptr;
+    auto type = e1->type_check(p);
+    if (type == nullptr) {
+        return type;
+    }
+    if (*type != *Bool) {
+        p->semant_error(p->get_class()) << "Expression must be boolean\n";
+        return nullptr;
+    }
+    set_type(Bool);
+    return get_type();
 }
 
 Symbol no_expr_class::type_check(ClassTable *p) {

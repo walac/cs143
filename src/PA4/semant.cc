@@ -210,6 +210,8 @@ bool ClassTable::leq(Symbol derived, Symbol ancestor) {
 }
 
 Class_ ClassTable::get_class(Symbol name) {
+    if (*name == *SELF_TYPE)
+        return get_class();
     auto it = classes_.find(name);
     if (it == classes_.end()) {
         semant_error() << "Class " << name << " was not found\n";

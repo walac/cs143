@@ -10,6 +10,7 @@
 #include <functional>
 #include <algorithm>
 #include <unordered_set>
+#include <vector>
 
 using namespace std;
 
@@ -646,11 +647,28 @@ Symbol loop_class::type_check(ClassTable *p) {
 }
 
 Symbol typcase_class::type_check(ClassTable *p) {
-    if (expr->type_check(p) == nullptr) {
+    auto expr_type = expr->type_check(p);
+    if (expr_type == nullptr) {
         return nullptr;
     }
-    set_type(Object);
-    return get_type();
+
+    vector<Symbol> s;
+    auto &symtab = p->attrs.find(p->get_class()->get_name())->second;
+
+    for (auto _case: *cases) {
+        auto branch = reinterpret_cast<branch_class*>(_case);
+        symtab.enterscope();
+        symtab.addid(branch->name, branch->type_decl);
+        auto branch_type = branch->type_check(p);
+        symtab.exitscope();
+        if (branch_type == nullptr) {
+            return nullptr;
+        }
+        s.push_back(branch_type);
+    }
+
+    using namespace std::placeholders;
+    return accumulate(begin(s), end(s), s[0], bind(&ClassTable::find_common_ancestor, p, _1, _2));
 }
 
 Symbol block_class::type_check(ClassTable *p) {

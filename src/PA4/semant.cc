@@ -654,6 +654,9 @@ Symbol loop_class::type_check(ClassTable *p) {
         p->semant_error(p->get_class()) << "Expression must be boolean\n";
         return nullptr;
     }
+    if (body->type_check(p) == nullptr) {
+        return nullptr;
+    }
     set_type(Object);
     return get_type();
 }

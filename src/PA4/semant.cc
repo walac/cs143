@@ -699,15 +699,18 @@ Symbol comp_class::type_check(ClassTable *p) {
 }
 
 Symbol int_const_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(Int);
+    return Int;
 }
 
 Symbol bool_const_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(Bool);
+    return Bool;
 }
 
 Symbol string_const_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(Str);
+    return Str;
 }
 
 Symbol new__class::type_check(ClassTable *p) {

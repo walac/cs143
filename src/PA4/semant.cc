@@ -659,39 +659,99 @@ Symbol block_class::type_check(ClassTable *p) {
 }
 
 Symbol let_class::type_check(ClassTable *p) {
-    return nullptr;
+    auto t0p = *type_decl == *SELF_TYPE ? p->get_class()->get_name() : type_decl;
+    if (p->get_class(t0p) == nullptr) {
+        return nullptr;
+    }
+
+    auto t1 = init->type_check(p);
+    if (!p->leq(t1, t0p)) {
+        p->semant_error(p->get_class()) << "Incompatible types\n";
+        return nullptr;
+    }
+
+    auto &symtab = p->attrs.find(p->get_class()->get_name())->second;
+    symtab.enterscope();
+    symtab.addid(identifier, t0p);
+    auto ret = body->type_check(p);
+    symtab.exitscope();
+    set_type(ret);
+    return ret;
+}
+
+static Symbol bin_expr_check(ClassTable *p, Expression e1, Expression e2, Symbol type = nullptr) {
+    auto t1 = e1->type_check(p);
+    if (t1 == nullptr) return nullptr;
+    if (type != nullptr && *t1 != *type) {
+        p->semant_error(p->get_class()) << "Expression 1 is not " << type << "\n";
+        return nullptr;
+    }
+    auto t2 = e2->type_check(p);
+    if (t2 == nullptr) return nullptr;
+    if (type != nullptr && *t2 != *type) {
+        p->semant_error(p->get_class()) << "Expression 2 is not Int " << type << "\n";
+        return nullptr;
+    }
+
+    if (type == nullptr && *t1 != *t2) {
+        p->semant_error(p->get_class()) << "Incompatible expressions\n";
+        return nullptr;
+    }
+
+    return t1;
 }
 
 Symbol plus_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(bin_expr_check(p, e1, e2, Int));
+    return get_type();
 }
 
 Symbol sub_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(bin_expr_check(p, e1, e2, Int));
+    return get_type();
 }
 
 Symbol mul_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(bin_expr_check(p, e1, e2, Int));
+    return get_type();
 }
 
 Symbol divide_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(bin_expr_check(p, e1, e2, Int));
+    return get_type();
 }
 
 Symbol neg_class::type_check(ClassTable *p) {
-    return nullptr;
+    set_type(e1->type_check(p));
+    if (*get_type() != *Int) {
+        p->semant_error(p->get_class()) << "Expression must be Int\n";
+    }
+    return get_type();
 }
 
 Symbol lt_class::type_check(ClassTable *p) {
-    return nullptr;
+    if (bin_expr_check(p, e1, e2) != nullptr) {
+        set_type(Bool);
+    }
+    return Bool;
 }
 
 Symbol eq_class::type_check(ClassTable *p) {
-    return nullptr;
+    unordered_set<Symbol> s{Int, Bool, Str};
+    set_type(bin_expr_check(p, e1, e2));
+    if (get_type() != nullptr && s.find(get_type()) == s.end()) {
+        p->semant_error(p->get_class()) << "Invalid expression type " << get_type() << "\n";
+        return nullptr;
+    }
+
+    return get_type();
 }
 
 Symbol leq_class::type_check(ClassTable *p) {
-    return nullptr;
+    if (bin_expr_check(p, e1, e2) != nullptr) {
+        set_type(Bool);
+    }
+    return Bool;
 }
 
 Symbol comp_class::type_check(ClassTable *p) {

@@ -555,17 +555,17 @@ Symbol static_dispatch_class ::type_check(ClassTable *p)  {
     auto it = mismatch(begin(*actual), enda, begin(*method->formals), [=](Expression expr, Formal formal) -> bool {
         auto typ = expr->type_check(p);
         if (typ == nullptr) {
-            return true;
+            return false;
         }
 
         auto f = reinterpret_cast<formal_class *>(formal);
 
         if (!p->leq(typ, f->type_decl)) {
             p->semant_error(p->get_class()) << "Invalid argument type for " << f->name << " in method call\n";
-            return true;;
+            return false;;
         }
 
-        return false;
+        return true;
     });
 
     if (it.first != enda) {
@@ -599,17 +599,17 @@ Symbol dispatch_class ::type_check(ClassTable *p)  {
     auto it = mismatch(begin(*actual), enda, begin(*method->formals), [=](Expression expr, Formal formal) -> bool {
         auto typ = expr->type_check(p);
         if (typ == nullptr) {
-            return true;
+            return false;
         }
 
         auto f = reinterpret_cast<formal_class *>(formal);
 
         if (!p->leq(typ, f->type_decl)) {
             p->semant_error(p->get_class()) << "Invalid argument type for " << f->name << " in method call\n";
-            return true;;
+            return false;
         }
 
-        return false;
+        return true;
     });
 
     Symbol ret;
@@ -878,8 +878,7 @@ Symbol object_class::type_check(ClassTable *p) {
             p->semant_error(p->get_class()) << "Variable " << name << " not found\n";
             return nullptr;
         }
-        auto cls = p->get_class(type);
-        set_type(cls->get_name());
+        set_type(type);
     }
     return get_type();
 }

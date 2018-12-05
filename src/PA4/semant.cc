@@ -785,11 +785,18 @@ Symbol lt_class::type_check(ClassTable *p) {
 Symbol eq_class::type_check(ClassTable *p) {
     unordered_set<Symbol> s{Int, Bool, Str};
     set_type(bin_expr_check(p, e1, e2));
-    if (get_type() != nullptr && s.find(get_type()) == s.end()) {
-        p->semant_error(p->get_class()) << "Invalid expression type " << get_type() << "\n";
-        return nullptr;
+    auto t1 = e1->type_check(p);
+    if (t1 == nullptr) return nullptr;
+    auto t2 = e1->type_check(p);
+    if (t2 == nullptr) return nullptr;
+    if (s.find(t1) != s.end() || s.find(t2) != s.end()) {
+        if (*t1 != *t2) {
+            p->semant_error(p->get_class()) << "Types are incompatible\n";
+            return nullptr;
+        }
     }
 
+    set_type(Bool);
     return get_type();
 }
 
@@ -854,10 +861,12 @@ Symbol no_expr_class::type_check(ClassTable *p) {
 }
 
 Symbol object_class::type_check(ClassTable *p) {
-    if (p->lookup(p->attrs, p->get_class()->get_name(), name) == nullptr) {
+    auto type = p->lookup(p->attrs, p->get_class()->get_name(), name);
+    if (type == nullptr) {
         p->semant_error(p->get_class()) << "Variable " << name << " not found\n";
         return nullptr;
     }
-    set_type(Object);
-    return Object;
+    auto cls = p->get_class(type);
+    set_type(cls->get_name());
+    return get_type();
 }

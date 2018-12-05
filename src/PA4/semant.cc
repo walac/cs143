@@ -860,12 +860,17 @@ Symbol no_expr_class::type_check(ClassTable *p) {
 }
 
 Symbol object_class::type_check(ClassTable *p) {
-    auto type = p->lookup(p->attrs, p->get_class()->get_name(), name);
-    if (type == nullptr) {
-        p->semant_error(p->get_class()) << "Variable " << name << " not found\n";
-        return nullptr;
+    Class_ cls;
+    if (*name == *self) {
+        set_type(SELF_TYPE);
+    } else {
+        auto type = p->lookup(p->attrs, p->get_class()->get_name(), name);
+        if (type == nullptr) {
+            p->semant_error(p->get_class()) << "Variable " << name << " not found\n";
+            return nullptr;
+        }
+        auto cls = p->get_class(type);
+        set_type(cls->get_name());
     }
-    auto cls = p->get_class(type);
-    set_type(cls->get_name());
     return get_type();
 }

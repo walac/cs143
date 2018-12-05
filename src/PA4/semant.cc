@@ -837,7 +837,7 @@ Symbol new__class::type_check(ClassTable *p) {
         p->semant_error(p->get_class()) << "Type " << type_name << " doesn't exist\n";
         return nullptr;
     }
-    set_type(tp);
+    set_type(type_name);
     return tp;
 }
 

@@ -802,8 +802,8 @@ Symbol leq_class::type_check(ClassTable *p) {
 
 Symbol comp_class::type_check(ClassTable *p) {
     auto type = e1->type_check(p);
-    if (*type != *Int) {
-        p->semant_error(p->get_class()) << "Expression must be Int\n";
+    if (*type != *Bool) {
+        p->semant_error(p->get_class()) << "Expression must be Bool\n";
         return nullptr;
     }
     set_type(type);

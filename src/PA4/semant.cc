@@ -720,7 +720,7 @@ Symbol let_class::type_check(ClassTable *p) {
     }
 
     auto t1 = init->type_check(p);
-    if (!p->leq(t1, t0p)) {
+    if (*t1 != *No_type && !p->leq(t1, t0p)) {
         p->semant_error(p->get_class()) << "Incompatible types\n";
         return nullptr;
     }

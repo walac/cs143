@@ -696,7 +696,8 @@ Symbol typcase_class::type_check(ClassTable *p) {
     }
 
     using namespace std::placeholders;
-    return accumulate(begin(s), end(s), *begin(s), bind(&ClassTable::find_common_ancestor, p, _1, _2));
+    set_type(accumulate(begin(s), end(s), *begin(s), bind(&ClassTable::find_common_ancestor, p, _1, _2)));
+    return get_type();
 }
 
 Symbol block_class::type_check(ClassTable *p) {

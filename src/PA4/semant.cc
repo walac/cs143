@@ -784,10 +784,9 @@ Symbol lt_class::type_check(ClassTable *p) {
 
 Symbol eq_class::type_check(ClassTable *p) {
     unordered_set<Symbol> s{Int, Bool, Str};
-    set_type(bin_expr_check(p, e1, e2));
     auto t1 = e1->type_check(p);
     if (t1 == nullptr) return nullptr;
-    auto t2 = e1->type_check(p);
+    auto t2 = e2->type_check(p);
     if (t2 == nullptr) return nullptr;
     if (s.find(t1) != s.end() || s.find(t2) != s.end()) {
         if (*t1 != *t2) {

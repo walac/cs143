@@ -714,6 +714,10 @@ Symbol block_class::type_check(ClassTable *p) {
 }
 
 Symbol let_class::type_check(ClassTable *p) {
+    if (*identifier == *self) {
+        p->semant_error(p->get_class()) << "Identifier can't be named self\n";
+        return nullptr;
+    }
     auto t0p = *type_decl == *SELF_TYPE ? p->get_class()->get_name() : type_decl;
     if (p->get_class(t0p) == nullptr) {
         return nullptr;

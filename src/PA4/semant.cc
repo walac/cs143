@@ -116,6 +116,8 @@ Value *ClassTable::lookup(std::unordered_map<Symbol, SymbolTable<Key, Value>> &s
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
     install_basic_classes();
 
+    unordered_set<Symbol> invalid_parents{Bool, Str};
+
     for (auto cls: *classes) {
         auto class_name = cls->get_name();
         auto parent = cls->get_parent();
@@ -126,6 +128,12 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
         if (parent != No_class && classes_.find(parent) == classes_.end()) {
             semant_error(cls) << "Class " << class_name << " inherits from non existent class " << parent << endl;
+            return;
+        }
+
+        auto it = invalid_parents.find(parent);
+        if (it != invalid_parents.end()) {
+            semant_error(cls) << "Class " << cls->get_name() << " cannot inherits from " << *it << "\n";
             return;
         }
 

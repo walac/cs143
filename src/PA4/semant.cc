@@ -124,6 +124,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 
         if (class_name == SELF_TYPE || classes_.find(class_name) != classes_.end()) {
             semant_error(cls) << class_name << " redeclared" << endl;
+            return;
         }
 
         if (parent != No_class && classes_.find(parent) == classes_.end()) {

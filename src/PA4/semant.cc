@@ -732,7 +732,7 @@ Symbol let_class::type_check(ClassTable *p) {
 
     auto &symtab = p->attrs.find(p->get_class()->get_name())->second;
     symtab.enterscope();
-    symtab.addid(identifier, t0p);
+    symtab.addid(identifier, type_decl);
     auto ret = body->type_check(p);
     if (ret == nullptr) return nullptr;
     symtab.exitscope();

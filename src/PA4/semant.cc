@@ -721,7 +721,7 @@ Symbol typcase_class::type_check(ClassTable *p) {
         return nullptr;
     }
 
-    unordered_set<Symbol> s;
+    unordered_set<Symbol> s, s2;
     auto &symtab = p->attrs.find(p->get_class()->get_name())->second;
 
     for (auto _case: *cases) {
@@ -733,14 +733,15 @@ Symbol typcase_class::type_check(ClassTable *p) {
         if (branch_type == nullptr) {
             return nullptr;
         }
-        if (!s.insert(branch_type).second) {
-            p->semant_error(p->get_class()) << "Duplicated case " << branch_type << "\n";
+        if (!s.insert(branch->type_decl).second) {
+            p->semant_error(p->get_class()) << "Duplicated case " << branch->type_decl << "\n";
             return nullptr;
         }
+        s2.insert(branch_type);
     }
 
     using namespace std::placeholders;
-    set_type(accumulate(begin(s), end(s), *begin(s), bind(&ClassTable::find_common_ancestor, p, _1, _2)));
+    set_type(accumulate(begin(s2), end(s2), *begin(s2), bind(&ClassTable::find_common_ancestor, p, _1, _2)));
     return get_type();
 }
 

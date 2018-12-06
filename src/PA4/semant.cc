@@ -127,11 +127,6 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
             return;
         }
 
-        if (parent != No_class && classes_.find(parent) == classes_.end()) {
-            semant_error(cls) << "Class " << class_name << " inherits from non existent class " << parent << endl;
-            return;
-        }
-
         auto it = invalid_parents.find(parent);
         if (it != invalid_parents.end()) {
             semant_error(cls) << "Class " << cls->get_name() << " cannot inherits from " << *it << "\n";
@@ -139,6 +134,15 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
         }
 
         classes_[class_name] = cls;
+    }
+
+    for (auto cls: *classes) {
+        auto parent = cls->get_parent();
+        auto class_name = cls->get_name();
+        if (parent != No_class && classes_.find(parent) == classes_.end()) {
+            semant_error(cls) << "Class " << class_name << " inherits from non existent class " << parent << endl;
+            return;
+        }
     }
 
     bool v[classes_.size()];

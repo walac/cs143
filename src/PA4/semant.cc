@@ -534,11 +534,12 @@ void method_class::type_check(ClassTable *p) {
     }
 
     auto rettype = expr->type_check(p);
-    //if (!p->leq(rettype, return_type)) {
-    //    p->semant_error(p->get_class()) << "Inferred return type " << rettype << " of method " << name << " does not conform to declared return type " << return_type << "\n";
-    //}
-    if (*return_type == *SELF_TYPE && *return_type != *rettype) {
-        p->semant_error(p->get_class()) << "Inferred return type " << rettype << " of method " << name << " does not conform to declared return type " << return_type << "\n";
+    if (rettype != nullptr) {
+        if (*return_type == *SELF_TYPE && *return_type != *rettype) {
+            p->semant_error(p->get_class()) << "Inferred return type " << rettype << " of method " << name << " does not conform to declared return type " << return_type << "\n";
+        } else if (!p->leq(rettype, return_type)) {
+            p->semant_error(p->get_class()) << "Inferred return type " << rettype << " of method " << name << " does not conform to declared return type " << return_type << "\n";
+        }
     }
     symtab.exitscope();
 }

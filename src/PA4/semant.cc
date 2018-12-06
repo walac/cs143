@@ -203,6 +203,8 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 }
 
 bool ClassTable::leq(Symbol derived, Symbol ancestor) {
+    ancestor = get_class(ancestor)->get_name();
+    derived = get_class(derived)->get_name();
     while (*derived != *No_class) {
         if (*derived == *ancestor) {
             return true;
@@ -497,7 +499,6 @@ void method_class::type_check(ClassTable *p) {
 
     expr->type_check(p);
     symtab.exitscope();
-    p->get_class(return_type);
 }
 
 void attr_class::type_check(ClassTable *p) {
@@ -725,7 +726,7 @@ Symbol let_class::type_check(ClassTable *p) {
 
     auto t1 = init->type_check(p);
     if (*t1 != *No_type && !p->leq(t1, t0p)) {
-        p->semant_error(p->get_class()) << "Incompatible types\n";
+        p->semant_error(p->get_class()) << "Incompatible types: " << t1 << " and " << t0p << "\n";
         return nullptr;
     }
 
@@ -733,9 +734,10 @@ Symbol let_class::type_check(ClassTable *p) {
     symtab.enterscope();
     symtab.addid(identifier, t0p);
     auto ret = body->type_check(p);
+    if (ret == nullptr) return nullptr;
     symtab.exitscope();
     set_type(ret);
-    return ret;
+    return get_type();
 }
 
 static Symbol bin_expr_check(ClassTable *p, Expression e1, Expression e2, Symbol type = nullptr) {

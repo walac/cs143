@@ -490,6 +490,10 @@ void method_class::type_check(ClassTable *p) {
 
     for (auto formal: *formals) {
         auto fc = reinterpret_cast<formal_class*>(formal);
+        if (*fc->name == *self) {
+            p->semant_error(p->get_class()) << "Parameter cannot be named 'self'\n";
+            return;
+        }
         if (symtab.probe(fc->name)) {
             p->semant_error(p->get_class()) << "Duplicated parameter name " << fc->name << " of method " << name << "\n";
             return;

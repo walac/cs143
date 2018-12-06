@@ -497,6 +497,25 @@ void method_class::type_check(ClassTable *p) {
         symtab.addid(fc->name, fc->type_decl);
     }
 
+    auto parent_method = p->lookup(p->methods, p->get_class()->get_parent(), name);
+    if (parent_method != nullptr) {
+        if (formals->len() != parent_method->formals->len()) {
+            symtab.exitscope();
+            p->semant_error(p->get_class()) << "Redefined method " << name << " has different number of parameters\n";
+            return;
+        }
+        auto e = end(*formals);
+        mismatch(begin(*formals), e, begin(*parent_method->formals), [=](Formal a, Formal b) -> bool {
+            auto f1 = reinterpret_cast<formal_class*>(a);
+            auto f2 = reinterpret_cast<formal_class*>(b);
+            auto ret = *f1->type_decl == *f2->type_decl;
+            if (!ret) {
+                p->semant_error(p->get_class()) << "In redefined method " << name << ", parameter type " << f1->type_decl << " is different from original type " << f2->type_decl << "\n";
+            }
+            return ret;
+        });
+    }
+
     expr->type_check(p);
     symtab.exitscope();
 }

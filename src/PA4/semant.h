@@ -118,7 +118,7 @@ public:
     ostream& semant_error();
     ostream& semant_error(Class_ c);
     ostream& semant_error(Symbol filename, tree_node *t);
-	Class_ get_class(Symbol name);
+	Class_ get_class(Symbol name, bool report = true);
 	Class_ get_class() { return cls_; }
     bool leq(Symbol derived, Symbol ancestor);
     Symbol find_common_ancestor(Symbol a, Symbol b);

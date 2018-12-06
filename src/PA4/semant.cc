@@ -220,12 +220,12 @@ bool ClassTable::leq(Symbol derived, Symbol ancestor) {
     return false;
 }
 
-Class_ ClassTable::get_class(Symbol name) {
+Class_ ClassTable::get_class(Symbol name, bool report) {
     if (*name == *SELF_TYPE)
         return get_class();
     auto it = classes_.find(name);
     if (it == classes_.end()) {
-        semant_error() << "Class " << name << " was not found\n";
+        if (report) semant_error() << "Class " << name << " was not found\n";
         return nullptr;
     }
 
@@ -481,6 +481,10 @@ void attr_class::add(ClassTable *p) {
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 void method_class::type_check(ClassTable *p) {
+    if (p->get_class(return_type, false) == nullptr) {
+        p->semant_error(p->get_class()) << "Undefined return type " << return_type << " for method " << name << "\n";
+        return;
+    }
     auto &symtab = p->attrs.find(p->get_class()->get_name())->second;
     symtab.enterscope();
 

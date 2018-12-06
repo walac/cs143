@@ -494,6 +494,10 @@ void method_class::type_check(ClassTable *p) {
             p->semant_error(p->get_class()) << "Parameter cannot be named 'self'\n";
             return;
         }
+        if (*fc->type_decl == *SELF_TYPE) {
+            p->semant_error(p->get_class()) << "Parameter cannot be typed 'SELF_TYPE'\n";
+            return;
+        }
         if (symtab.probe(fc->name)) {
             p->semant_error(p->get_class()) << "Duplicated parameter name " << fc->name << " of method " << name << "\n";
             return;
@@ -525,7 +529,13 @@ void method_class::type_check(ClassTable *p) {
         });
     }
 
-    expr->type_check(p);
+    auto rettype = expr->type_check(p);
+    //if (!p->leq(rettype, return_type)) {
+    //    p->semant_error(p->get_class()) << "Inferred return type " << rettype << " of method " << name << " does not conform to declared return type " << return_type << "\n";
+    //}
+    if (*return_type == *SELF_TYPE && *return_type != *rettype) {
+        p->semant_error(p->get_class()) << "Inferred return type " << rettype << " of method " << name << " does not conform to declared return type " << return_type << "\n";
+    }
     symtab.exitscope();
 }
 
@@ -881,7 +891,7 @@ Symbol new__class::type_check(ClassTable *p) {
         return nullptr;
     }
     set_type(type_name);
-    return tp;
+    return get_type();
 }
 
 Symbol isvoid_class::type_check(ClassTable *p) {

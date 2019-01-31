@@ -22,8 +22,12 @@
 //
 //**************************************************************
 
+#include <algorithm>
+#include <functional>
 #include "cgen.h"
 #include "cgen_gc.h"
+
+using namespace std;
 
 extern void emit_string_constant(ostream& str, char *s);
 extern int cgen_debug;
@@ -80,7 +84,7 @@ static void initialize_constants(void)
   Bool        = idtable.add_string("Bool");
   concat      = idtable.add_string("concat");
   cool_abort  = idtable.add_string("abort");
-  copy        = idtable.add_string("copy");
+  ::copy        = idtable.add_string("copy");
   Int         = idtable.add_string("Int");
   in_int      = idtable.add_string("in_int");
   in_string   = idtable.add_string("in_string");
@@ -675,7 +679,7 @@ void CgenClassTable::install_basic_classes()
            append_Features(
            single_Features(method(cool_abort, nil_Formals(), Object, no_expr())),
            single_Features(method(type_name, nil_Formals(), Str, no_expr()))),
-           single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))),
+           single_Features(method(::copy, nil_Formals(), SELF_TYPE, no_expr()))),
 	   filename),
     Basic,this));
 
@@ -810,12 +814,49 @@ void CgenNode::add_child(CgenNodeP n)
 
 void CgenNode::set_parentnd(CgenNodeP p)
 {
-  assert(parentnd == NULL);
-  assert(p != NULL);
-  parentnd = p;
+    assert(parentnd == NULL);
+    assert(p != NULL);
+    parentnd = p;
+    attr_indexes = p->attr_indexes;
+    meth_indexes = p->meth_indexes;
+    int attr_next = p->max_index(attr_indexes) + 1;
+    int meth_next = p->max_index(meth_indexes) + 1;
+
+    for (auto feature : *p->features) {
+        auto attr = dynamic_cast<attr_class *>(feature);
+        if (attr != nullptr) {
+            attr_indexes[attr->name] = attr_next++;
+        } else {
+            auto meth = dynamic_cast<method_class *>(feature);
+            assert(meth);
+            meth_indexes[meth->name] = meth_next++;
+        }
+    }
 }
 
+int CgenNode::max_index(const unordered_map<Symbol, int> &i) const
+{
+    auto e = end(i);
+    auto it = max_element(begin(i), e, [](const auto &a, const auto &b) {
+        return a.second < b.second;
+    });
 
+    return it == e ? -1 : it->second;
+}
+
+int CgenNode::emit_attr_index(Symbol p) const
+{
+    auto it = attr_indexes.find(p);
+    assert(it != attr_indexes.end());
+    return (3 + it->second) * 4;
+}
+
+int CgenNode::emit_meth_index(Symbol p) const
+{
+    auto it = meth_indexes.find(p);
+    assert(it != meth_indexes.end());
+    return it->second * 4;
+}
 
 void CgenClassTable::code()
 {

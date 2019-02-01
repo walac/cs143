@@ -623,14 +623,20 @@ void CgenClassTable::code_constants()
 
 CgenClassTable::CgenClassTable(Classes classes, ostream& s) : nds(NULL) , str(s)
 {
-   stringclasstag = 0 /* Change to your String class tag here */;
-   intclasstag =    0 /* Change to your Int class tag here */;
-   boolclasstag =   0 /* Change to your Bool class tag here */;
+   tags.push_back(Str);
+   tags.push_back(Int);
+   tags.push_back(Bool);
 
    enterscope();
    if (cgen_debug) cout << "Building CgenClassTable" << endl;
    install_basic_classes();
    install_classes(classes);
+
+   sort(begin(tags), end(tags), [](auto a, auto b) { return *a < *b; });
+   stringclasstag = tag(Str); /* Change to your String class tag here */;
+   intclasstag =    tag(Int); /* Change to your Int class tag here */;
+   boolclasstag =   tag(Bool); /* Change to your Bool class tag here */;
+
    build_inheritance_tree();
 
    code();
@@ -736,7 +742,7 @@ void CgenClassTable::install_basic_classes()
 //       
    install_class(
     new CgenNode(
-      class_(Str, 
+      class_(Str,
 	     Object,
              append_Features(
              append_Features(
@@ -777,6 +783,7 @@ void CgenClassTable::install_class(CgenNodeP nd)
   // and the symbol table.
   nds = new List<CgenNode>(nd,nds);
   addid(name,nd);
+  tags.push_back(name);
 }
 
 void CgenClassTable::install_classes(Classes cs)
@@ -805,6 +812,15 @@ void CgenClassTable::set_relations(CgenNodeP nd)
   CgenNode *parent_node = probe(nd->get_parent());
   nd->set_parentnd(parent_node);
   parent_node->add_child(nd);
+}
+
+int CgenClassTable::tag(Symbol p) const
+{
+    auto e = end(tags);
+    auto first = begin(tags);
+    auto low = lower_bound(first, e, p, [](auto a, auto b) { return *a < *b; });
+    assert(low != e && **low == *p);
+    return distance(first, low);
 }
 
 void CgenNode::add_child(CgenNodeP n)

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <type_traits>
 #include <iterator>
+#include <vector>
 #include "emit.h"
 #include "cool-tree.h"
 #include "symtab.h"
@@ -25,6 +26,15 @@ bool operator==(const symbol_t &a, const symbol_t &b) {
 
 bool operator!=(const symbol_t &a, const symbol_t &b) {
     return !(a == b);
+}
+
+bool operator<(const symbol_t &a, const symbol_t &b) {
+    return std::lexicographical_compare(
+        a.get_string(),
+        a.get_string() + a.get_len(),
+        b.get_string(),
+        b.get_string() + b.get_len()
+    );
 }
 
 template<typename T>
@@ -94,6 +104,7 @@ class CgenClassTable : public SymbolTable<Symbol,CgenNode> {
 private:
     List<CgenNode> *nds;
     ostream& str;
+    std::vector<Symbol> tags;
     int stringclasstag;
     int intclasstag;
     int boolclasstag;
@@ -122,6 +133,7 @@ public:
     CgenClassTable(Classes, ostream& str);
     void code();
     CgenNodeP root();
+    int tag(Symbol p) const;
 };
 
 

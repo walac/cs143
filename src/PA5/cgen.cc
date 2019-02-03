@@ -637,6 +637,10 @@ CgenClassTable::CgenClassTable(Classes classes, ostream& s) : nds(NULL) , str(s)
    intclasstag =    tag(Int); /* Change to your Int class tag here */;
    boolclasstag =   tag(Bool); /* Change to your Bool class tag here */;
 
+   // add all class tags to the int constants table
+   for (auto i = 0; i < tags.size(); ++i)
+       inttable.add_int(i);
+
    build_inheritance_tree();
 
    code();
@@ -864,7 +868,7 @@ int CgenNode::emit_attr_index(Symbol p) const
 {
     auto it = attr_indexes.find(p);
     assert(it != attr_indexes.end());
-    return (3 + it->second) * 4;
+    return (DEFAULT_OBJFIELDS + it->second) * 4;
 }
 
 int CgenNode::emit_meth_index(Symbol p) const

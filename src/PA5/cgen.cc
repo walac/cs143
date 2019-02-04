@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include "cgen.h"
 #include "cgen_gc.h"
 
@@ -620,6 +621,16 @@ void CgenClassTable::code_constants()
   code_bools(boolclasstag);
 }
 
+void CgenClassTable::code_class_nameTab()
+{
+    str << CLASSNAMETAB << LABEL << endl;
+    for (auto cls_name: tags) {
+        auto entry = stringtable.lookup_string(cls_name->get_string());
+        str << WORD;
+        entry->code_ref(str);
+        str << endl;
+    }
+}
 
 CgenClassTable::CgenClassTable(Classes classes, ostream& s) : nds(NULL) , str(s)
 {
@@ -638,7 +649,7 @@ CgenClassTable::CgenClassTable(Classes classes, ostream& s) : nds(NULL) , str(s)
    boolclasstag =   tag(Bool); /* Change to your Bool class tag here */;
 
    // add all class tags to the int constants table
-   for (auto i = 0; i < tags.size(); ++i)
+   for (decltype(tags.size()) i = 0; i < tags.size(); ++i)
        inttable.add_int(i);
 
    build_inheritance_tree();

@@ -159,6 +159,8 @@ public:
     int basic() { return (basic_status == Basic); }
     int emit_attr_index(Symbol p) const;
     int emit_meth_index(Symbol p) const;
+    void code_protObj(int tag, std::ostream &os);
+    void code_init(std::ostream &os);
 
 private:
     int max_index(const std::unordered_map<Symbol, int> &i) const;

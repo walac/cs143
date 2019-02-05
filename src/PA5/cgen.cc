@@ -922,6 +922,43 @@ CgenNodeP CgenClassTable::root()
    return probe(Object);
 }
 
+void CgenNode::code_protObj(int tag, ostream &os)
+{
+    os << name << PROTOBJ_SUFFIX << LABEL << endl;
+    os << WORD << "-1" << endl;
+    os << WORD << tag << endl;
+    os << WORD << 4 * (max_index(attr_indexes) + 1 + DEFAULT_OBJFIELDS) << endl;
+    os << WORD << name << DISPTAB_SUFFIX << endl;
+
+    auto default_int = inttable.lookup_string("0");
+    auto default_str = stringtable.lookup_string("");
+
+    for (auto feature: *features) {
+        auto attr = reinterpret_cast<attr_class *>(feature);
+        if (attr == nullptr) continue;
+        auto type = attr->type_decl;
+
+        if (*type == *Str) {
+            os << WORD;
+            default_str->code_ref(os);
+            os << endl;
+        } else if (*type == *Int) {
+            os << WORD;
+            default_int->code_ref(os);
+            os << endl;
+        } else if (*type == *Bool) {
+            os << WORD;
+            falsebool.code_ref(os);
+            os << endl;
+        } else {
+            os << WORD << 0 << endl;
+        }
+    }
+}
+
+void CgenNode::code_init(ostream &os)
+{
+}
 
 ///////////////////////////////////////////////////////////////////////
 //

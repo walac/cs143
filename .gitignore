@@ -1,0 +1,4 @@
+lexer
+semant
+parser
+*.o

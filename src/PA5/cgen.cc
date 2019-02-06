@@ -924,7 +924,8 @@ CgenNodeP CgenClassTable::root()
 
 void CgenNode::code_protObj(int tag, ostream &os)
 {
-    os << name << PROTOBJ_SUFFIX << LABEL << endl;
+    emit_protobj_ref(name, os);
+    os << LABEL << endl;
     os << WORD << "-1" << endl;
     os << WORD << tag << endl;
     os << WORD << 4 * (max_index(attr_indexes) + 1 + DEFAULT_OBJFIELDS) << endl;
@@ -958,6 +959,43 @@ void CgenNode::code_protObj(int tag, ostream &os)
 
 void CgenNode::code_init(ostream &os)
 {
+}
+
+Symbol CgenNode::find_cls_method(Symbol method)
+{
+    for (auto cls = this; *cls->name != *No_class; cls = cls->get_parentnd()) {
+        auto e = end(*cls->features);
+        auto it = find_if(begin(*cls->features), e, [=](auto feature) -> bool {
+            auto meth = reinterpret_cast<method_class*> (feature);
+            if (meth == nullptr) return false;
+            return *meth->name == *method;
+        });
+
+        if (it != e)
+            return cls->name;
+    }
+
+    return nullptr;
+}
+
+void CgenNode::code_dispatchTab(ostream &os)
+{
+    vector<pair<Symbol, Symbol>> disp_tbl(meth_indexes.size());
+
+    for (auto p: meth_indexes) {
+        auto cls = find_cls_method(p.first);
+        assert(cls);
+        disp_tbl[p.second] = make_pair(cls, p.first);
+    }
+
+    emit_disptable_ref(name, os);
+    os << LABEL << endl;
+
+    for (auto meth: disp_tbl) {
+        os << WORD;
+        emit_method_ref(meth.first, meth.second, os);
+        os << endl;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////

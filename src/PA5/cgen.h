@@ -161,9 +161,11 @@ public:
     int emit_meth_index(Symbol p) const;
     void code_protObj(int tag, std::ostream &os);
     void code_init(std::ostream &os);
+    void code_dispatchTab(ostream &os);
 
 private:
     int max_index(const std::unordered_map<Symbol, int> &i) const;
+    Symbol find_cls_method(Symbol method);
     void build_indexes();
 };
 

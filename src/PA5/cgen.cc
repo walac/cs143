@@ -838,6 +838,19 @@ int CgenClassTable::tag(Symbol p) const
     return distance(first, low);
 }
 
+void CgenClassTable::code_objTab()
+{
+    str << CLASSOBJTAB << LABEL << endl;
+
+    for (auto cls: tags) {
+        str << WORD;
+        emit_protobj_ref(cls, str);
+        str << endl << WORD;
+        emit_init_ref(cls, str);
+        str << endl;
+    }
+}
+
 void CgenNode::add_child(CgenNodeP n)
 {
   children = new List<CgenNode>(n,children);
@@ -960,7 +973,6 @@ void CgenNode::code_protObj(int tag, ostream &os)
 void CgenNode::code_init(ostream &os)
 {
 }
-
 Symbol CgenNode::find_cls_method(Symbol method)
 {
     for (auto cls = this; *cls->name != *No_class; cls = cls->get_parentnd()) {

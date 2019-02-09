@@ -913,20 +913,25 @@ void CgenClassTable::code()
   if (cgen_debug) cout << "coding constants" << endl;
   code_constants();
 
-//                 Add your code to emit
-//                   - prototype objects
-//                   - class_nameTab
-//                   - dispatch tables
-//
+  if (cgen_debug) cout << "coding class name table" << endl;
+  code_class_nameTab();
+
+  if (cgen_debug) cout << "coding object table" << endl;
+  code_objTab();
+
 
   if (cgen_debug) cout << "coding global text" << endl;
   code_global_text();
 
-//                 Add your code to emit
-//                   - object initializer
-//                   - the class methods
-//                   - etc...
-
+  for(List<CgenNode> *l = nds; l; l = l->tl()) {
+      auto c = l->hd();
+      if (cgen_debug) cout << "coding object prototypes for " << c->name << endl;
+      c->code_protObj(tag(c->name), str);
+      if (cgen_debug) cout << "coding dispatch tables for " << c->name << endl;
+      c->code_dispatchTab(str);
+      if (cgen_debug) cout << "coding object initialization for " << c->name << endl;
+      c->code_init(str);
+  }
 }
 
 
@@ -973,6 +978,7 @@ void CgenNode::code_protObj(int tag, ostream &os)
 void CgenNode::code_init(ostream &os)
 {
 }
+
 Symbol CgenNode::find_cls_method(Symbol method)
 {
     for (auto cls = this; *cls->name != *No_class; cls = cls->get_parentnd()) {

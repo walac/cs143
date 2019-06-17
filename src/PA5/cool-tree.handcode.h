@@ -10,7 +10,7 @@
 #include "stringtab.h"
 #define yylineno curr_lineno;
 extern int yylineno;
-
+class Context;
 inline Boolean copy_Boolean(Boolean b) {return b; }
 inline void assert_Boolean(Boolean) {}
 inline void dump_Boolean(ostream& stream, int padding, Boolean b)
@@ -96,13 +96,13 @@ void dump_with_types(ostream& ,int);
 Symbol type;                                 \
 Symbol get_type() { return type; }           \
 Expression set_type(Symbol s) { type = s; return this; } \
-virtual void code(ostream&) = 0; \
+virtual void code(ostream&, Context) = 0; \
 virtual void dump_with_types(ostream&,int) = 0;  \
 void dump_type(ostream&, int);               \
 Expression_class() { type = (Symbol) NULL; }
 
 #define Expression_SHARED_EXTRAS           \
-void code(ostream&); 			   \
+void code(ostream&, Context); 			   \
 void dump_with_types(ostream&,int); 
 
 

@@ -21,11 +21,17 @@
 //
 //**************************************************************
 
+#include <sstream>
+#include <unordered_map>
 #include "cgen.h"
 #include "cgen_gc.h"
 
 extern void emit_string_constant(ostream& str, char *s);
 extern int cgen_debug;
+
+unordered_map<Symbol, CgenNodeP> sym_map;
+
+static int lnum;
 
 //
 // Three symbols from the semantic analyzer (semant.cc) are used.
@@ -154,79 +160,79 @@ void program_class::cgen(ostream &os)
 //
 //////////////////////////////////////////////////////////////////////////////
 
-static void emit_load(char *dest_reg, int offset, char *source_reg, ostream& s)
+static void emit_load(const char *dest_reg, int offset, const char *source_reg, ostream& s)
 {
     s << LW << dest_reg << " " << offset * WORD_SIZE << "(" << source_reg << ")" 
         << endl;
 }
 
-static void emit_store(char *source_reg, int offset, char *dest_reg, ostream& s)
+static void emit_store(const char *source_reg, int offset, const char *dest_reg, ostream& s)
 {
     s << SW << source_reg << " " << offset * WORD_SIZE << "(" << dest_reg << ")"
         << endl;
 }
 
-static void emit_load_imm(char *dest_reg, int val, ostream& s)
+static void emit_load_imm(const char *dest_reg, int val, ostream& s)
 { s << LI << dest_reg << " " << val << endl; }
 
-static void emit_load_address(char *dest_reg, char *address, ostream& s)
+static void emit_load_address(const char *dest_reg, const char *address, ostream& s)
 { s << LA << dest_reg << " " << address << endl; }
 
-static void emit_partial_load_address(char *dest_reg, ostream& s)
+static void emit_partial_load_address(const char *dest_reg, ostream& s)
 { s << LA << dest_reg << " "; }
 
-static void emit_load_bool(char *dest, const BoolConst& b, ostream& s)
+static void emit_load_bool(const char *dest, const BoolConst& b, ostream& s)
 {
     emit_partial_load_address(dest,s);
     b.code_ref(s);
     s << endl;
 }
 
-static void emit_load_string(char *dest, StringEntry *str, ostream& s)
+static void emit_load_string(const char *dest, StringEntry *str, ostream& s)
 {
     emit_partial_load_address(dest,s);
     str->code_ref(s);
     s << endl;
 }
 
-static void emit_load_int(char *dest, IntEntry *i, ostream& s)
+static void emit_load_int(const char *dest, IntEntry *i, ostream& s)
 {
     emit_partial_load_address(dest,s);
     i->code_ref(s);
     s << endl;
 }
 
-static void emit_move(char *dest_reg, char *source_reg, ostream& s)
+static void emit_move(const char *dest_reg, const char *source_reg, ostream& s)
 { s << MOVE << dest_reg << " " << source_reg << endl; }
 
-static void emit_neg(char *dest, char *src1, ostream& s)
+static void emit_neg(const char *dest, const char *src1, ostream& s)
 { s << NEG << dest << " " << src1 << endl; }
 
-static void emit_add(char *dest, char *src1, char *src2, ostream& s)
+static void emit_add(const char *dest, const char *src1, const char *src2, ostream& s)
 { s << ADD << dest << " " << src1 << " " << src2 << endl; }
 
-static void emit_addu(char *dest, char *src1, char *src2, ostream& s)
+static void emit_addu(const char *dest, const char *src1, const char *src2, ostream& s)
 { s << ADDU << dest << " " << src1 << " " << src2 << endl; }
 
-static void emit_addiu(char *dest, char *src1, int imm, ostream& s)
+static void emit_addiu(const char *dest, const char *src1, int imm, ostream& s)
 { s << ADDIU << dest << " " << src1 << " " << imm << endl; }
 
-static void emit_div(char *dest, char *src1, char *src2, ostream& s)
+static void emit_div(const char *dest, const char *src1, const char *src2, ostream& s)
 { s << DIV << dest << " " << src1 << " " << src2 << endl; }
 
-static void emit_mul(char *dest, char *src1, char *src2, ostream& s)
+static void emit_mul(const char *dest, const char *src1, const char *src2, ostream& s)
 { s << MUL << dest << " " << src1 << " " << src2 << endl; }
 
-static void emit_sub(char *dest, char *src1, char *src2, ostream& s)
+static void emit_sub(const char *dest, const char *src1, const char *src2, ostream& s)
 { s << SUB << dest << " " << src1 << " " << src2 << endl; }
 
-static void emit_sll(char *dest, char *src1, int num, ostream& s)
+static void emit_sll(const char *dest, const char *src1, int num, ostream& s)
 { s << SLL << dest << " " << src1 << " " << num << endl; }
 
-static void emit_jalr(char *dest, ostream& s)
+static void emit_jalr(const char *dest, ostream& s)
 { s << JALR << "\t" << dest << endl; }
 
-static void emit_jal(char *address,ostream &s)
+static void emit_jal(const char *address,ostream &s)
 { s << JAL << address << endl; }
 
 static void emit_return(ostream& s)
@@ -256,49 +262,49 @@ static void emit_label_def(int l, ostream &s)
     s << ":" << endl;
 }
 
-static void emit_beqz(char *source, int label, ostream &s)
+static void emit_beqz(const char *source, int label, ostream &s)
 {
     s << BEQZ << source << " ";
     emit_label_ref(label,s);
     s << endl;
 }
 
-static void emit_beq(char *src1, char *src2, int label, ostream &s)
+static void emit_beq(const char *src1, const char *src2, int label, ostream &s)
 {
     s << BEQ << src1 << " " << src2 << " ";
     emit_label_ref(label,s);
     s << endl;
 }
 
-static void emit_bne(char *src1, char *src2, int label, ostream &s)
+static void emit_bne(const char *src1, const char *src2, int label, ostream &s)
 {
     s << BNE << src1 << " " << src2 << " ";
     emit_label_ref(label,s);
     s << endl;
 }
 
-static void emit_bleq(char *src1, char *src2, int label, ostream &s)
+static void emit_bleq(const char *src1, const char *src2, int label, ostream &s)
 {
     s << BLEQ << src1 << " " << src2 << " ";
     emit_label_ref(label,s);
     s << endl;
 }
 
-static void emit_blt(char *src1, char *src2, int label, ostream &s)
+static void emit_blt(const char *src1, const char *src2, int label, ostream &s)
 {
     s << BLT << src1 << " " << src2 << " ";
     emit_label_ref(label,s);
     s << endl;
 }
 
-static void emit_blti(char *src1, int imm, int label, ostream &s)
+static void emit_blti(const char *src1, int imm, int label, ostream &s)
 {
     s << BLT << src1 << " " << imm << " ";
     emit_label_ref(label,s);
     s << endl;
 }
 
-static void emit_bgti(char *src1, int imm, int label, ostream &s)
+static void emit_bgti(const char *src1, int imm, int label, ostream &s)
 {
     s << BGT << src1 << " " << imm << " ";
     emit_label_ref(label,s);
@@ -315,10 +321,16 @@ static void emit_branch(int l, ostream& s)
 //
 // Push a register on the stack. The stack grows towards smaller addresses.
 //
-static void emit_push(char *reg, ostream& str)
+static void emit_push(const char *reg, ostream& str)
 {
     emit_store(reg,0,SP,str);
     emit_addiu(SP,SP,-4,str);
+}
+
+static void emit_pop(const char *reg, ostream &str)
+{
+    emit_addiu(SP,SP,WORD_SIZE,str);
+    emit_load(reg,0,SP,str);
 }
 
 //
@@ -326,14 +338,14 @@ static void emit_push(char *reg, ostream& str)
 // Emits code to fetch the integer value of the Integer object pointed
 // to by register source into the register dest
 //
-static void emit_fetch_int(char *dest, char *source, ostream& s)
+static void emit_fetch_int(const char *dest, const char *source, ostream& s)
 { emit_load(dest, DEFAULT_OBJFIELDS, source, s); }
 
 //
 // Emits code to store the integer value contained in register source
 // into the Integer object pointed to by dest.
 //
-static void emit_store_int(char *source, char *dest, ostream& s)
+static void emit_store_int(const char *source, const char *dest, ostream& s)
 { emit_store(source, DEFAULT_OBJFIELDS, dest, s); }
 
 
@@ -773,6 +785,7 @@ void CgenClassTable::install_class(CgenNodeP nd)
     nds = new List<CgenNode>(nd,nds);
     addid(name,nd);
     tags.push_back(name);
+    sym_map[name] = nd;
 }
 
 void CgenClassTable::install_classes(Classes cs)
@@ -991,58 +1004,128 @@ void CgenNode::code_dispatchTab(ostream &os)
 //
 //*****************************************************************
 
-void assign_class::code(ostream &s) {
+// Activation record layout
+//
+// +-----------------+
+// | Self Object     |
+// | ARG 0           |
+// | ARG 1           |
+// | ...             |
+// | ARG N           |
+// | Frame Pointer   |
+// | Return Address  |
+// | LET 0           |
+// | LET 1           |
+// | ...             |
+// | LET N           |
+// +-----------------+
+
+void assign_class::code(ostream &s, Context c) {
+    int i;
+    expr->code(s, c);
+    if ((i = c.lookup_var(name)) != -1) {
+        emit_store(ACC, -i - 2, FP, s);
+    } else if ((i = c.lookup_param(name) != -1)) {
+        emit_store(ACC, i + 1, FP, s);
+    } else {
+        i = c.lookup_attr(name);
+        assert(i != -1);
+        emit_store(ACC, i + 3, SELF, s);
+    }
 }
 
-void static_dispatch_class::code(ostream &s) {
+void static_dispatch_class::code(ostream &s, Context c) {
+    emit_push(SELF, s);
+    for (auto a: *actual) {
+        a->code(s, c);
+        emit_push(ACC, s);
+    }
+    expr->code(s, c);
+    emit_move(SELF, ACC, s);
+    stringstream meth;
+    meth << type_name->get_string() << '.' << name->get_string();
+    emit_jal(meth.str().c_str(), s);
+    emit_addiu(SP, SP, WORD_SIZE*actual->len(), s);
+    emit_pop(SELF, s);
 }
 
-void dispatch_class::code(ostream &s) {
+void dispatch_class::code(ostream &s, Context c) {
+    emit_push(SELF, s);
+    for (auto a: *actual) {
+        a->code(s, c);
+        emit_push(ACC, s);
+    }
+    expr->code(s, c);
+    emit_move(SELF, ACC, s);
+    auto cls = *expr->get_type() == *SELF_TYPE ? c.get_so() : sym_map[expr->get_type()];
+    emit_load(ACC, 2, SELF, s);
+    emit_load(ACC, cls->lookup_meth(name), ACC, s);
+    emit_jalr(ACC, s);
+    emit_addiu(SP, SP, WORD_SIZE*actual->len(), s);
+    emit_pop(SELF, s);
 }
 
-void cond_class::code(ostream &s) {
+void cond_class::code(ostream &s, Context c) {
+    pred->code(s, c);
+    int elsebranch = lnum++;
+    emit_beq(ACC, ZERO, elsebranch, s);
+    then_exp->code(s, c);
+    emit_branch(lnum, s);
+    emit_label_def(elsebranch, s);
+    else_exp->code(s, c);
+    emit_label_def(lnum++, s);
 }
 
-void loop_class::code(ostream &s) {
+void loop_class::code(ostream &s, Context c) {
+    int looplabel = lnum++;
+    emit_label_def(looplabel, s);
+    pred->code(s, c);
+    emit_beq(ACC, ZERO, lnum, s);
+    body->code(s, c);
+    emit_branch(looplabel, s);
+    emit_label_def(lnum++, s);
 }
 
-void typcase_class::code(ostream &s) {
+void typcase_class::code(ostream &s, Context c) {
 }
 
-void block_class::code(ostream &s) {
+void block_class::code(ostream &s, Context c) {
+    for (auto b: *body) {
+        b->code(s, c);
+    }
 }
 
-void let_class::code(ostream &s) {
+void let_class::code(ostream &s, Context c) {
 }
 
-void plus_class::code(ostream &s) {
+void plus_class::code(ostream &s, Context c) {
 }
 
-void sub_class::code(ostream &s) {
+void sub_class::code(ostream &s, Context c) {
 }
 
-void mul_class::code(ostream &s) {
+void mul_class::code(ostream &s, Context c) {
 }
 
-void divide_class::code(ostream &s) {
+void divide_class::code(ostream &s, Context c) {
 }
 
-void neg_class::code(ostream &s) {
+void neg_class::code(ostream &s, Context c) {
 }
 
-void lt_class::code(ostream &s) {
+void lt_class::code(ostream &s, Context c) {
 }
 
-void eq_class::code(ostream &s) {
+void eq_class::code(ostream &s, Context c) {
 }
 
-void leq_class::code(ostream &s) {
+void leq_class::code(ostream &s, Context c) {
 }
 
-void comp_class::code(ostream &s) {
+void comp_class::code(ostream &s, Context c) {
 }
 
-void int_const_class::code(ostream& s)  
+void int_const_class::code(ostream& s, Context c)  
 {
     auto tk = token->get_string();
     auto entry = inttable.lookup_string(tk);
@@ -1050,7 +1133,7 @@ void int_const_class::code(ostream& s)
     emit_load_int(ACC,entry,s);
 }
 
-void string_const_class::code(ostream& s)
+void string_const_class::code(ostream& s, Context c)
 {
     auto tk = token->get_string();
     auto entry = stringtable.lookup_string(tk);
@@ -1058,21 +1141,20 @@ void string_const_class::code(ostream& s)
     emit_load_string(ACC,entry,s);
 }
 
-void bool_const_class::code(ostream& s)
+void bool_const_class::code(ostream& s, Context c)
 {
     emit_load_bool(ACC, BoolConst(val), s);
 }
 
-void new__class::code(ostream &s) {
+void new__class::code(ostream &s, Context c) {
 }
 
-void isvoid_class::code(ostream &s) {
+void isvoid_class::code(ostream &s, Context c) {
 }
 
-void no_expr_class::code(ostream &s) {
+void no_expr_class::code(ostream &s, Context c) {
 }
 
-void object_class::code(ostream &s) {
+void object_class::code(ostream &s, Context c) {
 }
-
 

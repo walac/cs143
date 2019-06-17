@@ -189,8 +189,12 @@ public:
 
     CgenNodeP get_so() const { return so; }
     int lookup_attr(Symbol name) const { return so->lookup_attr(name); }
-    int lookup_parameter(Symbol name) const { return index_of(let_vars, name); }
-    int look_params(Symbol name) const { return index_of(params, name); }
+    int lookup_var(Symbol name) const { return index_of(let_vars, name); }
+    int lookup_param(Symbol name) const { 
+        auto i = index_of(params, name);
+        if (i == -1) return i;
+        return params.size() - 1 - i;
+    }
 
     int add_let(Symbol name) {
         let_vars.push_back(name);

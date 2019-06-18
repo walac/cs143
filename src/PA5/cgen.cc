@@ -26,6 +26,8 @@
 #include "cgen.h"
 #include "cgen_gc.h"
 
+#define OBJCOPY "Object.copy"
+
 extern void emit_string_constant(ostream& str, char *s);
 extern int cgen_debug;
 
@@ -1096,33 +1098,132 @@ void block_class::code(ostream &s, Context c) {
 }
 
 void let_class::code(ostream &s, Context c) {
+    init->code(s, c);
+    c.add_let(identifier);
+    emit_push(ACC, s);
+    body->code(s, c);
 }
 
 void plus_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    emit_jal(OBJCOPY, s);
+    emit_pop(T2, s);
+    emit_pop(T1, s);
+    emit_add(T1, T1, T2, s);
+    emit_store_int(T1, ACC, s);
 }
 
 void sub_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    emit_jal(OBJCOPY, s);
+    emit_pop(T2, s);
+    emit_pop(T1, s);
+    emit_sub(T1, T1, T2, s);
+    emit_store_int(T1, ACC, s);
 }
 
 void mul_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    emit_jal(OBJCOPY, s);
+    emit_pop(T2, s);
+    emit_pop(T1, s);
+    emit_mul(T1, T1, T2, s);
+    emit_store_int(T1, ACC, s);
 }
 
 void divide_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    emit_jal(OBJCOPY, s);
+    emit_pop(T2, s);
+    emit_pop(T1, s);
+    emit_div(T1, T1, T2, s);
+    emit_store_int(T1, ACC, s);
 }
 
 void neg_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_jal(OBJCOPY, s);
+    emit_fetch_int(T1, ACC, s);
+    emit_neg(T1, T1, s);
+    emit_store_int(T1, ACC, s);
 }
 
 void lt_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T2, s);
+    emit_pop(T1, s);
+    auto ltlabel = lnum++;
+    emit_blt(T1, T2, ltlabel, s);
+    emit_load_bool(ACC, falsebool, s);
+    emit_branch(lnum, s);
+    emit_label_def(ltlabel, s);
+    emit_load_bool(ACC, truebool, s);
+    emit_label_def(lnum++, s);
 }
 
 void eq_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T2, s);
+    emit_pop(T1, s);
+    auto ltlabel = lnum++;
+    emit_beq(T1, T2, ltlabel, s);
+    emit_load_bool(ACC, falsebool, s);
+    emit_branch(lnum, s);
+    emit_label_def(ltlabel, s);
+    emit_load_bool(ACC, truebool, s);
+    emit_label_def(lnum++, s);
 }
 
 void leq_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(ACC, T1, s);
+    emit_push(T1, s);
+    e2->code(s, c);
+    emit_fetch_int(ACC, T2, s);
+    emit_pop(T1, s);
+    auto ltlabel = lnum++;
+    emit_bleq(T1, T2, ltlabel, s);
+    emit_load_bool(ACC, falsebool, s);
+    emit_branch(lnum, s);
+    emit_label_def(ltlabel, s);
+    emit_load_bool(ACC, truebool, s);
+    emit_label_def(lnum++, s);
 }
 
 void comp_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    emit_fetch_int(T1, ACC, s);
+    emit_load_bool(ACC, truebool, s);
+    emit_fetch_int(T2, ACC, s);
+    emit_bne(T1, T2, lnum, s);
+    emit_load_bool(ACC, falsebool, s);
+    emit_label_def(lnum++, s);
 }
 
 void int_const_class::code(ostream& s, Context c)  
@@ -1147,6 +1248,9 @@ void bool_const_class::code(ostream& s, Context c)
 }
 
 void new__class::code(ostream &s, Context c) {
+    emit_partial_load_address(ACC, s);
+    emit_protobj_ref(type_name, s);
+    emit_jal(OBJCOPY, s);
 }
 
 void isvoid_class::code(ostream &s, Context c) {

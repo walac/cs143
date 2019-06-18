@@ -856,6 +856,7 @@ void CgenClassTable::class_nameTab()
     str << CLASSNAMETAB << LABEL << endl;
     for (auto cls_name: tags) {
         auto entry = stringtable.lookup_string(cls_name->get_string());
+        assert(entry);
         str << WORD;
         entry->code_ref(str);
         str << endl;
@@ -1025,9 +1026,12 @@ void CgenNode::code_methods(ostream &os)
 
 void CgenNode::code_init(ostream &os)
 {
+    emit_init_ref(name, os);
+    os << LABEL << endl;
     if (*parent != *No_class) {
         emit_partial_load_address(ACC, os);
         emit_init_ref(parent, os);
+        os << endl;
         emit_jalr(ACC, os);
     }
 

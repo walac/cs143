@@ -170,6 +170,8 @@ public:
     int lookup_meth(Symbol name) const { return index_of(methods, name); }
     void code_protObj(int tag, ostream &os);
     void code_dispatchTab(ostream &os);
+    void code_init(ostream &os);
+    void code_methods(ostream &os);
 };
 
 class BoolConst 

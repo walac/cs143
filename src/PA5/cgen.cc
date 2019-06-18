@@ -618,12 +618,6 @@ void CgenClassTable::code_select_gc()
 
 void CgenClassTable::code_constants()
 {
-    //
-    // Add constants that are required by the code generator.
-    //
-    stringtable.add_string("");
-    inttable.add_string("0");
-
     stringtable.code_string_table(str,stringclasstag);
     inttable.code_string_table(str,intclasstag);
     code_bools(boolclasstag);
@@ -870,6 +864,12 @@ void CgenClassTable::class_nameTab()
 
 void CgenClassTable::code()
 {
+    //
+    // Add constants that are required by the code generator.
+    //
+    stringtable.add_string("");
+    inttable.add_string("0");
+
     if (cgen_debug) cout << "coding global data" << endl;
     code_global_data();
 
@@ -895,6 +895,11 @@ void CgenClassTable::code()
     //                   - object initializer
     //                   - the class methods
     //                   - etc...
+    for (decltype(tags.size()) i = 0; i < tags.size(); ++i) {
+        auto cls = lookup(tags[i]);
+        cls->code_init(str);
+        cls->code_methods(str);
+    }
 
     if (cgen_debug) cout << "coding constants" << endl;
     code_constants();
@@ -996,6 +1001,48 @@ void CgenNode::code_dispatchTab(ostream &os)
     }
 }
 
+void CgenNode::code_methods(ostream &os)
+{
+    for (auto feature: *features) {
+        auto method = dynamic_cast<method_class*>(feature);
+        if (!method) continue;
+        emit_method_ref(name, method->name, os);
+        os << LABEL << endl;
+        emit_push(FP, os);
+        emit_move(FP, SP, os);
+        emit_push(RA, os);
+        Context ctx(this);
+        for (auto formal: *method->formals) {
+            auto param = dynamic_cast<formal_class&>(*formal);
+            ctx.add_param(param.name);
+        }
+        method->expr->code(os, ctx);
+        emit_pop(RA, os);
+        emit_pop(FP, os);
+        emit_return(os);
+    }
+}
+
+void CgenNode::code_init(ostream &os)
+{
+    if (*parent != *No_class) {
+        emit_partial_load_address(ACC, os);
+        emit_init_ref(parent, os);
+        emit_jalr(ACC, os);
+    }
+
+    for (auto feature: *features) {
+        auto attr = dynamic_cast<attr_class*>(feature);
+        if (attr != nullptr) {
+            Context c(this);
+            attr->init->code(os, c);
+            emit_store(ACC, lookup_attr(attr->name) + DEFAULT_OBJFIELDS, SELF, os);
+        }
+    }
+
+    emit_return(os);
+}
+
 //******************************************************************
 //
 //   Fill in the following methods to produce code for the
@@ -1032,7 +1079,7 @@ void assign_class::code(ostream &s, Context c) {
     } else {
         i = c.lookup_attr(name);
         assert(i != -1);
-        emit_store(ACC, i + 3, SELF, s);
+        emit_store(ACC, i + DEFAULT_OBJFIELDS, SELF, s);
     }
 }
 
@@ -1102,6 +1149,7 @@ void let_class::code(ostream &s, Context c) {
     c.add_let(identifier);
     emit_push(ACC, s);
     body->code(s, c);
+    emit_pop(T1, s);
 }
 
 void plus_class::code(ostream &s, Context c) {
@@ -1248,9 +1296,17 @@ void bool_const_class::code(ostream& s, Context c)
 }
 
 void new__class::code(ostream &s, Context c) {
+    Symbol myname;
     emit_partial_load_address(ACC, s);
-    emit_protobj_ref(type_name, s);
+    if (*type_name == *SELF_TYPE)
+        myname = c.get_so()->get_name();
+    else
+        myname = type_name;
     emit_jal(OBJCOPY, s);
+    emit_move(SELF, ACC, s);
+    emit_partial_load_address(ACC, s);
+    emit_init_ref(myname, s);
+    emit_jalr(ACC, s);
 }
 
 void isvoid_class::code(ostream &s, Context c) {

@@ -499,7 +499,7 @@ void BoolConst::code_def(ostream& s, int boolclasstag)
     code_ref(s);  s << LABEL                                  // label
         << WORD << boolclasstag << endl                       // class tag
         << WORD << (DEFAULT_OBJFIELDS + BOOL_SLOTS) << endl   // object size
-        << WORD;
+        << WORD << 0;
 
     /***** Add dispatch information for class Bool ******/
 

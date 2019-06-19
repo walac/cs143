@@ -412,7 +412,7 @@ void StringEntry::code_def(ostream& s, int stringclasstag)
     code_ref(s);  s  << LABEL                                             // label
         << WORD << stringclasstag << endl                                 // tag
         << WORD << (DEFAULT_OBJFIELDS + STRING_SLOTS + (len+4)/4) << endl // size
-        << WORD;
+        << WORD << 0;
 
 
     /***** Add dispatch information for class String ******/
@@ -455,7 +455,7 @@ void IntEntry::code_def(ostream &s, int intclasstag)
     code_ref(s);  s << LABEL                                // label
         << WORD << intclasstag << endl                      // class tag
         << WORD << (DEFAULT_OBJFIELDS + INT_SLOTS) << endl  // object size
-        << WORD; 
+        << WORD << 0;
 
     /***** Add dispatch information for class Int ******/
 
@@ -618,6 +618,12 @@ void CgenClassTable::code_select_gc()
 
 void CgenClassTable::code_constants()
 {
+    //
+    // Add constants that are required by the code generator.
+    //
+    stringtable.add_string("");
+    inttable.add_string("0");
+
     stringtable.code_string_table(str,stringclasstag);
     inttable.code_string_table(str,intclasstag);
     code_bools(boolclasstag);
@@ -865,14 +871,11 @@ void CgenClassTable::class_nameTab()
 
 void CgenClassTable::code()
 {
-    //
-    // Add constants that are required by the code generator.
-    //
-    stringtable.add_string("");
-    inttable.add_string("0");
-
     if (cgen_debug) cout << "coding global data" << endl;
     code_global_data();
+
+    if (cgen_debug) cout << "coding constants" << endl;
+    code_constants();
 
     if (cgen_debug) cout << "choosing gc" << endl;
     code_select_gc();
@@ -897,13 +900,12 @@ void CgenClassTable::code()
     //                   - the class methods
     //                   - etc...
     for (decltype(tags.size()) i = 0; i < tags.size(); ++i) {
-        auto cls = lookup(tags[i]);
+        auto name = tags[i];
+        auto cls = lookup(name);
         cls->code_init(str);
-        cls->code_methods(str);
+        if (*name != *Int && *name != *Str && *name != *Object && *name != *IO)
+            cls->code_methods(str);
     }
-
-    if (cgen_debug) cout << "coding constants" << endl;
-    code_constants();
 
 }
 
@@ -1282,7 +1284,7 @@ void int_const_class::code(ostream& s, Context c)
 {
     auto tk = token->get_string();
     auto entry = inttable.lookup_string(tk);
-    if (!entry) entry = inttable.add_string(tk);
+    //if (!entry) entry = inttable.add_string(tk);
     emit_load_int(ACC,entry,s);
 }
 
@@ -1290,7 +1292,7 @@ void string_const_class::code(ostream& s, Context c)
 {
     auto tk = token->get_string();
     auto entry = stringtable.lookup_string(tk);
-    if (!entry) entry = stringtable.add_string(tk);
+    //if (!entry) entry = stringtable.add_string(tk);
     emit_load_string(ACC,entry,s);
 }
 

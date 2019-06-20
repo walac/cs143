@@ -933,9 +933,9 @@ CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTableP ct) :
 
 void CgenNode::code_protObj(int tag, ostream &os)
 {
+    os << WORD << "-1" << endl;
     emit_protobj_ref(name, os);
     os << LABEL << endl;
-    os << WORD << "-1" << endl;
     os << WORD << tag << endl;
     os << WORD << 4 * (attributes.size() + DEFAULT_OBJFIELDS) << endl;
     os << WORD << name << DISPTAB_SUFFIX << endl;
@@ -1022,6 +1022,7 @@ void CgenNode::code_methods(ostream &os)
         method->expr->code(os, ctx);
         emit_pop(RA, os);
         emit_pop(FP, os);
+        emit_addiu(SP, SP, WORD_SIZE*method->formals->len(), os);
         emit_return(os);
     }
 }
@@ -1030,6 +1031,7 @@ void CgenNode::code_init(ostream &os)
 {
     emit_init_ref(name, os);
     os << LABEL << endl;
+    emit_push(RA, os);
     if (*parent != *No_class) {
         emit_partial_load_address(ACC, os);
         emit_init_ref(parent, os);
@@ -1046,6 +1048,7 @@ void CgenNode::code_init(ostream &os)
         }
     }
 
+    emit_pop(RA, os);
     emit_return(os);
 }
 
@@ -1100,7 +1103,6 @@ void static_dispatch_class::code(ostream &s, Context c) {
     stringstream meth;
     meth << type_name->get_string() << '.' << name->get_string();
     emit_jal(meth.str().c_str(), s);
-    emit_addiu(SP, SP, WORD_SIZE*actual->len(), s);
     emit_pop(SELF, s);
 }
 
@@ -1113,10 +1115,9 @@ void dispatch_class::code(ostream &s, Context c) {
     expr->code(s, c);
     emit_move(SELF, ACC, s);
     auto cls = *expr->get_type() == *SELF_TYPE ? c.get_so() : sym_map[expr->get_type()];
-    emit_load(ACC, 2, SELF, s);
-    emit_load(ACC, cls->lookup_meth(name), ACC, s);
-    emit_jalr(ACC, s);
-    emit_addiu(SP, SP, WORD_SIZE*actual->len(), s);
+    emit_load(T1, 2, SELF, s);
+    emit_load(T1, cls->lookup_meth(name), T1, s);
+    emit_jalr(T1, s);
     emit_pop(SELF, s);
 }
 
@@ -1319,8 +1320,10 @@ void isvoid_class::code(ostream &s, Context c) {
 }
 
 void no_expr_class::code(ostream &s, Context c) {
+    emit_move(ACC, SELF, s);
 }
 
 void object_class::code(ostream &s, Context c) {
+    emit_move(ACC, SELF, s);
 }
 

@@ -193,7 +193,7 @@ public:
     int lookup_attr(Symbol name) const { return so->lookup_attr(name); }
     int lookup_var(Symbol name) const { return index_of(let_vars, name); }
     int lookup_param(Symbol name) const { 
-        auto i = index_of(params, name);
+        int i = index_of(params, name);
         if (i == -1) return i;
         return params.size() - 1 - i;
     }

@@ -840,9 +840,6 @@ void CgenNode::set_parentnd(CgenNodeP p)
     assert(p != NULL);
     parentnd = p;
 
-    attributes = p->attributes;
-    methods = p->methods;
-
     for (auto feature: *p->features) {
         auto a = dynamic_cast<attr_class*>(feature);
         if (a) {
@@ -850,7 +847,20 @@ void CgenNode::set_parentnd(CgenNodeP p)
         } else {
             auto m = dynamic_cast<method_class&>(*feature);
             auto e = end(methods);
-            if (find(begin(methods), e, m.name) == e) {
+            if (find_if(begin(methods), e, [&m] (auto meth) -> bool {return *meth == *m.name;}) == e) {
+                methods.push_back(m.name);
+            }
+        }
+    }
+
+    for (auto feature: *features) {
+        auto a = dynamic_cast<attr_class*>(feature);
+        if (a) {
+            attributes.push_back(a->name);
+        } else {
+            auto m = dynamic_cast<method_class&>(*feature);
+            auto e = end(methods);
+            if (find_if(begin(methods), e, [&m] (auto meth) -> bool {return *meth == *m.name;}) == e) {
                 methods.push_back(m.name);
             }
         }
@@ -1082,8 +1092,8 @@ void assign_class::code(ostream &s, Context c) {
     int i;
     expr->code(s, c);
     if ((i = c.lookup_var(name)) != -1) {
-        emit_store(ACC, -i - 2, FP, s);
-    } else if ((i = c.lookup_param(name) != -1)) {
+        emit_store(ACC, -i - 1, FP, s);
+    } else if ((i = c.lookup_param(name)) != -1) {
         emit_store(ACC, i + 1, FP, s);
     } else {
         i = c.lookup_attr(name);
@@ -1320,10 +1330,23 @@ void isvoid_class::code(ostream &s, Context c) {
 }
 
 void no_expr_class::code(ostream &s, Context c) {
-    emit_move(ACC, SELF, s);
 }
 
 void object_class::code(ostream &s, Context c) {
-    emit_move(ACC, SELF, s);
+    s << "# Load " << name << endl;
+    if (*name == *self) {
+        emit_move(ACC, SELF, s);
+    } else {
+        int i;
+        if ((i = c.lookup_var(name)) != -1) {
+            emit_load(ACC, -i - 1, FP, s);
+        } else if ((i = c.lookup_param(name)) != -1) {
+            emit_load(ACC, i + 2, FP, s);
+        } else {
+            i = c.lookup_attr(name);
+            assert(i != -1);
+            emit_load(ACC, i + DEFAULT_OBJFIELDS, SELF, s);
+        }
+    }
 }
 

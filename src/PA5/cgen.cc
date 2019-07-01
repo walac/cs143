@@ -1053,8 +1053,10 @@ void CgenNode::code_init(ostream &os)
         auto attr = dynamic_cast<attr_class*>(feature);
         if (attr != nullptr) {
             Context c(this);
-            attr->init->code(os, c);
-            emit_store(ACC, lookup_attr(attr->name) + DEFAULT_OBJFIELDS, SELF, os);
+            if (attr->init->get_type()) {
+                attr->init->code(os, c);
+                emit_store(ACC, lookup_attr(attr->name) + DEFAULT_OBJFIELDS, SELF, os);
+                }
         }
     }
 
@@ -1133,6 +1135,7 @@ void dispatch_class::code(ostream &s, Context c) {
 
 void cond_class::code(ostream &s, Context c) {
     pred->code(s, c);
+    emit_fetch_int(ACC, ACC, s);
     int elsebranch = lnum++;
     emit_beq(ACC, ZERO, elsebranch, s);
     then_exp->code(s, c);
@@ -1146,6 +1149,7 @@ void loop_class::code(ostream &s, Context c) {
     int looplabel = lnum++;
     emit_label_def(looplabel, s);
     pred->code(s, c);
+    emit_fetch_int(ACC, ACC, s);
     emit_beq(ACC, ZERO, lnum, s);
     body->code(s, c);
     emit_branch(looplabel, s);

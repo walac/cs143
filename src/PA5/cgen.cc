@@ -412,7 +412,9 @@ void StringEntry::code_def(ostream& s, int stringclasstag)
     code_ref(s);  s  << LABEL                                             // label
         << WORD << stringclasstag << endl                                 // tag
         << WORD << (DEFAULT_OBJFIELDS + STRING_SLOTS + (len+4)/4) << endl // size
-        << WORD << 0;
+        << WORD;
+    emit_disptable_ref(Str, s);
+    s << endl;
 
 
     /***** Add dispatch information for class String ******/
@@ -1166,7 +1168,17 @@ void block_class::code(ostream &s, Context c) {
 }
 
 void let_class::code(ostream &s, Context c) {
-    init->code(s, c);
+    if (init->type != nullptr)
+        init->code(s, c);
+    else if (*type_decl == *Str)
+        emit_load_string(ACC, stringtable.lookup_string(""), s);
+    else if (*type_decl == *Int)
+        emit_load_int(ACC, inttable.lookup_string("0"), s);
+    else if (*type_decl == *Bool)
+        emit_load_bool(ACC, falsebool, s);
+    else
+        emit_move(ACC, ZERO, s);
+
     c.add_let(identifier);
     emit_push(ACC, s);
     body->code(s, c);
@@ -1239,10 +1251,10 @@ void neg_class::code(ostream &s, Context c) {
 
 void lt_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
+    emit_fetch_int(T1, ACC, s);
     emit_push(T1, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T2, s);
+    emit_fetch_int(T2, ACC, s);
     emit_pop(T1, s);
     auto ltlabel = lnum++;
     emit_blt(T1, T2, ltlabel, s);
@@ -1255,26 +1267,28 @@ void lt_class::code(ostream &s, Context c) {
 
 void eq_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
-    emit_push(T1, s);
+    emit_push(ACC, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T2, s);
+    emit_move(T2, ACC, s);
     emit_pop(T1, s);
-    auto ltlabel = lnum++;
-    emit_beq(T1, T2, ltlabel, s);
-    emit_load_bool(ACC, falsebool, s);
-    emit_branch(lnum, s);
-    emit_label_def(ltlabel, s);
     emit_load_bool(ACC, truebool, s);
-    emit_label_def(lnum++, s);
+    emit_load_bool(A1, falsebool, s);
+
+    if (*e1->type == *Int || *e1->type == *Bool || *e1->type == *Str) {
+        emit_jal("equality_test", s);
+    } else {
+        emit_beq(T1, T2, lnum, s);
+        emit_move(ACC, A1, s);
+        emit_label_def(lnum++, s);
+    }
 }
 
 void leq_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
+    emit_fetch_int(T1, ACC, s);
     emit_push(T1, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T2, s);
+    emit_fetch_int(T2, ACC, s);
     emit_pop(T1, s);
     auto ltlabel = lnum++;
     emit_bleq(T1, T2, ltlabel, s);

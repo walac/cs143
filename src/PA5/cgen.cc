@@ -1187,10 +1187,10 @@ void let_class::code(ostream &s, Context c) {
 
 void plus_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
-    emit_push(T1, s);
+    emit_fetch_int(ACC, ACC, s);
+    emit_push(ACC, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T1, s);
+    emit_fetch_int(T1, ACC, s);
     emit_push(T1, s);
     emit_jal(OBJCOPY, s);
     emit_pop(T2, s);
@@ -1201,10 +1201,10 @@ void plus_class::code(ostream &s, Context c) {
 
 void sub_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
-    emit_push(T1, s);
+    emit_fetch_int(ACC, ACC, s);
+    emit_push(ACC, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T1, s);
+    emit_fetch_int(T1, ACC, s);
     emit_push(T1, s);
     emit_jal(OBJCOPY, s);
     emit_pop(T2, s);
@@ -1215,10 +1215,10 @@ void sub_class::code(ostream &s, Context c) {
 
 void mul_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
-    emit_push(T1, s);
+    emit_fetch_int(ACC, ACC, s);
+    emit_push(ACC, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T1, s);
+    emit_fetch_int(T1, ACC, s);
     emit_push(T1, s);
     emit_jal(OBJCOPY, s);
     emit_pop(T2, s);
@@ -1229,10 +1229,10 @@ void mul_class::code(ostream &s, Context c) {
 
 void divide_class::code(ostream &s, Context c) {
     e1->code(s, c);
-    emit_fetch_int(ACC, T1, s);
-    emit_push(T1, s);
+    emit_fetch_int(ACC, ACC, s);
+    emit_push(ACC, s);
     e2->code(s, c);
-    emit_fetch_int(ACC, T1, s);
+    emit_fetch_int(T1, ACC, s);
     emit_push(T1, s);
     emit_jal(OBJCOPY, s);
     emit_pop(T2, s);

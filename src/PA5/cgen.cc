@@ -1045,10 +1045,10 @@ void CgenNode::code_init(ostream &os)
     os << LABEL << endl;
     emit_push(RA, os);
     if (*parent != *No_class) {
-        emit_partial_load_address(ACC, os);
+        emit_partial_load_address(T1, os);
         emit_init_ref(parent, os);
         os << endl;
-        emit_jalr(ACC, os);
+        emit_jalr(T1, os);
     }
 
     for (auto feature: *features) {
@@ -1337,11 +1337,16 @@ void new__class::code(ostream &s, Context c) {
         myname = c.get_so()->get_name();
     else
         myname = type_name;
+    emit_protobj_ref(myname, s);
+    s << endl;
     emit_jal(OBJCOPY, s);
+    emit_push(SELF, s);
     emit_move(SELF, ACC, s);
     emit_partial_load_address(ACC, s);
     emit_init_ref(myname, s);
+    s << endl;
     emit_jalr(ACC, s);
+    emit_pop(SELF, s);
 }
 
 void isvoid_class::code(ostream &s, Context c) {

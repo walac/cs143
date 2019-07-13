@@ -1342,10 +1342,10 @@ void new__class::code(ostream &s, Context c) {
     emit_jal(OBJCOPY, s);
     emit_push(SELF, s);
     emit_move(SELF, ACC, s);
-    emit_partial_load_address(ACC, s);
+    emit_partial_load_address(T1, s);
     emit_init_ref(myname, s);
     s << endl;
-    emit_jalr(ACC, s);
+    emit_jalr(T1, s);
     emit_pop(SELF, s);
 }
 

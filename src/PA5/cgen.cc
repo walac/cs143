@@ -457,7 +457,9 @@ void IntEntry::code_def(ostream &s, int intclasstag)
     code_ref(s);  s << LABEL                                // label
         << WORD << intclasstag << endl                      // class tag
         << WORD << (DEFAULT_OBJFIELDS + INT_SLOTS) << endl  // object size
-        << WORD << 0;
+        << WORD;
+    emit_disptable_ref(Int, s);
+    s << endl;
 
     /***** Add dispatch information for class Int ******/
 
@@ -501,7 +503,9 @@ void BoolConst::code_def(ostream& s, int boolclasstag)
     code_ref(s);  s << LABEL                                  // label
         << WORD << boolclasstag << endl                       // class tag
         << WORD << (DEFAULT_OBJFIELDS + BOOL_SLOTS) << endl   // object size
-        << WORD << 0;
+        << WORD;
+    emit_disptable_ref(Bool, s);
+    s << endl;
 
     /***** Add dispatch information for class Bool ******/
 

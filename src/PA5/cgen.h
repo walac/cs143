@@ -152,8 +152,6 @@ private:
     CgenNodeP parentnd;         // Parent of class
     List<CgenNode> *children;   // Children of class
     Basicness basic_status;     // `Basic' if class is basic or `NotBasic' otherwise
-    vector<Symbol> attributes;
-    vector<Symbol> methods;
     Symbol find_cls_method(Symbol method);
 
 public:
@@ -172,6 +170,8 @@ public:
     void code_dispatchTab(ostream &os);
     void code_init(ostream &os);
     void code_methods(ostream &os);
+    vector<Symbol> methods;
+    vector<Symbol> attributes;
 };
 
 class BoolConst 

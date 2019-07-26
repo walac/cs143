@@ -23,6 +23,7 @@
 
 #include <sstream>
 #include <unordered_map>
+#include <list>
 #include "cgen.h"
 #include "cgen_gc.h"
 
@@ -811,6 +812,28 @@ void CgenClassTable::build_inheritance_tree()
 {
     for(List<CgenNode> *l = nds; l; l = l->tl())
         set_relations(l->hd());
+
+    for(List<CgenNode> *l = nds; l; l = l->tl()) {
+        std::list<CgenNodeP> ll;
+        auto p = l->hd();
+        for (auto c = p; c; c = c->get_parentnd())
+            ll.push_front(c);
+
+        for (auto c: ll) {
+            for (auto feature: *c->features) {
+                auto a = dynamic_cast<attr_class*>(feature);
+                if (a) {
+                    p->attributes.push_back(a->name);
+                } else {
+                    auto m = dynamic_cast<method_class&>(*feature);
+                    auto e = end(p->methods);
+                    if (find_if(begin(p->methods), e, [&m] (auto meth) -> bool {return *meth == *m.name;}) == e) {
+                        p->methods.push_back(m.name);
+                    }
+                }
+            }
+        }
+    }
 }
 
 //
@@ -845,32 +868,6 @@ void CgenNode::set_parentnd(CgenNodeP p)
     assert(parentnd == NULL);
     assert(p != NULL);
     parentnd = p;
-
-    for (auto feature: *p->features) {
-        auto a = dynamic_cast<attr_class*>(feature);
-        if (a) {
-            attributes.push_back(a->name);
-        } else {
-            auto m = dynamic_cast<method_class&>(*feature);
-            auto e = end(methods);
-            if (find_if(begin(methods), e, [&m] (auto meth) -> bool {return *meth == *m.name;}) == e) {
-                methods.push_back(m.name);
-            }
-        }
-    }
-
-    for (auto feature: *features) {
-        auto a = dynamic_cast<attr_class*>(feature);
-        if (a) {
-            attributes.push_back(a->name);
-        } else {
-            auto m = dynamic_cast<method_class&>(*feature);
-            auto e = end(methods);
-            if (find_if(begin(methods), e, [&m] (auto meth) -> bool {return *meth == *m.name;}) == e) {
-                methods.push_back(m.name);
-            }
-        }
-    }
 }
 
 void CgenClassTable::class_nameTab()

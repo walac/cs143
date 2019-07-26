@@ -1145,10 +1145,11 @@ void cond_class::code(ostream &s, Context c) {
     int elsebranch = lnum++;
     emit_beq(ACC, ZERO, elsebranch, s);
     then_exp->code(s, c);
-    emit_branch(lnum, s);
+    auto label = lnum++;
+    emit_branch(label, s);
     emit_label_def(elsebranch, s);
     else_exp->code(s, c);
-    emit_label_def(lnum++, s);
+    emit_label_def(label, s);
 }
 
 void loop_class::code(ostream &s, Context c) {
@@ -1156,10 +1157,11 @@ void loop_class::code(ostream &s, Context c) {
     emit_label_def(looplabel, s);
     pred->code(s, c);
     emit_fetch_int(ACC, ACC, s);
-    emit_beq(ACC, ZERO, lnum, s);
+    auto exit = lnum++;
+    emit_beq(ACC, ZERO, exit, s);
     body->code(s, c);
     emit_branch(looplabel, s);
-    emit_label_def(lnum++, s);
+    emit_label_def(exit, s);
 }
 
 void typcase_class::code(ostream &s, Context c) {

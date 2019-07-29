@@ -1057,9 +1057,11 @@ void CgenNode::code_init(ostream &os)
         if (attr != nullptr) {
             Context c(this);
             if (attr->init->get_type()) {
+                os << "# Initializing " << attr->name << endl;
                 attr->init->code(os, c);
                 emit_store(ACC, lookup_attr(attr->name) + DEFAULT_OBJFIELDS, SELF, os);
-                }
+                os << "# " << attr->name << " initialized\n";
+            }
         }
     }
 
@@ -1114,6 +1116,13 @@ void static_dispatch_class::code(ostream &s, Context c) {
         emit_push(ACC, s);
     }
     expr->code(s, c);
+    emit_bne(ACC, ZERO, lnum, s);
+    auto fname = c.get_so()->get_filename()->get_string();
+    stringtable.add_string(fname);
+    emit_load_string(ACC, stringtable.lookup_string(fname), s);
+    emit_load_imm(T1, curr_lineno, s);
+    emit_jal("_dispatch_abort", s);
+    emit_label_def(lnum++, s);
     emit_move(SELF, ACC, s);
     stringstream meth;
     meth << type_name->get_string() << '.' << name->get_string();
@@ -1128,6 +1137,13 @@ void dispatch_class::code(ostream &s, Context c) {
         emit_push(ACC, s);
     }
     expr->code(s, c);
+    emit_bne(ACC, ZERO, lnum, s);
+    auto fname = c.get_so()->get_filename()->get_string();
+    stringtable.add_string(fname);
+    emit_load_string(ACC, stringtable.lookup_string(fname), s);
+    emit_load_imm(T1, curr_lineno, s);
+    emit_jal("_dispatch_abort", s);
+    emit_label_def(lnum++, s);
     emit_move(SELF, ACC, s);
     auto cls = *expr->get_type() == *SELF_TYPE ? c.get_so() : sym_map[expr->get_type()];
     emit_load(T1, 2, SELF, s);
@@ -1159,6 +1175,7 @@ void loop_class::code(ostream &s, Context c) {
     body->code(s, c);
     emit_branch(looplabel, s);
     emit_label_def(exit, s);
+    emit_move(ACC, ZERO, s);
 }
 
 void typcase_class::code(ostream &s, Context c) {
@@ -1374,5 +1391,6 @@ void object_class::code(ostream &s, Context c) {
             emit_load(ACC, i + DEFAULT_OBJFIELDS, SELF, s);
         }
     }
+    s << "# Loaded " << name << endl;
 }
 

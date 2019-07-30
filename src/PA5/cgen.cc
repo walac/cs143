@@ -585,6 +585,10 @@ void CgenClassTable::code_global_text()
     str << endl << GLOBAL;
     emit_method_ref(idtable.add_string("Main"), idtable.add_string("main"), str);
     str << endl;
+    str << CLASSOBJTAB << LABEL << endl;
+    for (auto it: tags) {
+        str << WORD << *it << PROTOBJ_SUFFIX << endl;
+    }
 }
 
 void CgenClassTable::code_bools(int boolclasstag)
@@ -1351,22 +1355,29 @@ void bool_const_class::code(ostream& s, Context c)
 }
 
 void new__class::code(ostream &s, Context c) {
-    Symbol myname;
-    emit_partial_load_address(ACC, s);
-    if (*type_name == *SELF_TYPE)
-        myname = c.get_so()->get_name();
-    else
-        myname = type_name;
-    emit_protobj_ref(myname, s);
-    s << endl;
+    if (*type_name == *SELF_TYPE) {
+        emit_partial_load_address(T1, s);
+        s << CLASSOBJTAB << endl;
+        emit_load(T2, 0, SELF, s);
+        emit_load_imm(ACC, 4, s);
+        emit_mul(T2, T2, ACC, s);
+        emit_add(T1, T1, T2, s);
+        emit_load(ACC, 0, T1, s);
+    } else {
+        emit_partial_load_address(ACC, s);
+        emit_protobj_ref(type_name, s);
+        s << endl;
+    }
     emit_jal(OBJCOPY, s);
-    emit_push(SELF, s);
-    emit_move(SELF, ACC, s);
-    emit_partial_load_address(T1, s);
-    emit_init_ref(myname, s);
-    s << endl;
-    emit_jalr(T1, s);
-    emit_pop(SELF, s);
+    if (*type_name != *SELF_TYPE) {
+        emit_push(SELF, s);
+        emit_move(SELF, ACC, s);
+        emit_partial_load_address(T1, s);
+        emit_init_ref(type_name, s);
+        s << endl;
+        emit_jalr(T1, s);
+        emit_pop(SELF, s);
+    }
 }
 
 void isvoid_class::code(ostream &s, Context c) {

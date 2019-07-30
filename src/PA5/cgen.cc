@@ -1026,6 +1026,9 @@ void CgenNode::code_methods(ostream &os)
     for (auto feature: *features) {
         auto method = dynamic_cast<method_class*>(feature);
         if (!method) continue;
+        os << GLOBAL;
+        emit_method_ref(name, method->name, os);
+        os << endl;
         emit_method_ref(name, method->name, os);
         os << LABEL << endl;
         emit_push(FP, os);
@@ -1046,6 +1049,9 @@ void CgenNode::code_methods(ostream &os)
 
 void CgenNode::code_init(ostream &os)
 {
+    os << GLOBAL;
+    emit_init_ref(name, os);
+    os << endl;
     emit_init_ref(name, os);
     os << LABEL << endl;
     emit_push(RA, os);
@@ -1372,10 +1378,12 @@ void new__class::code(ostream &s, Context c) {
     if (*type_name != *SELF_TYPE) {
         emit_push(SELF, s);
         emit_move(SELF, ACC, s);
+        emit_push(ACC, s);
         emit_partial_load_address(T1, s);
         emit_init_ref(type_name, s);
         s << endl;
         emit_jalr(T1, s);
+        emit_pop(ACC, s);
         emit_pop(SELF, s);
     }
 }

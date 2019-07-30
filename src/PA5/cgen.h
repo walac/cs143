@@ -104,10 +104,18 @@ node_iterator<T> end(list_node<T> &) {
 
 template<typename U, typename K>
 int index_of(const U& container, const K& key) {
-    auto b = begin(container);
-    auto e = end(container);
+    auto b = cbegin(container);
+    auto e = cend(container);
     auto it = find(b, e, key);
     return it != e ? distance(b, it) : -1;
+}
+
+template<typename U, typename K>
+int rindex_of(const U& container, const K& key) {
+    auto b = crbegin(container);
+    auto e = crend(container);
+    auto it = find(b, e, key);
+    return it != e ? distance(it, e)-1 : -1;
 }
 
 class CgenClassTable : public SymbolTable<Symbol,CgenNode> {
@@ -191,7 +199,7 @@ public:
 
     CgenNodeP get_so() const { return so; }
     int lookup_attr(Symbol name) const { return so->lookup_attr(name); }
-    int lookup_var(Symbol name) const { return index_of(let_vars, name); }
+    int lookup_var(Symbol name) const { return rindex_of(let_vars, name); }
     int lookup_param(Symbol name) const { 
         int i = index_of(params, name);
         if (i == -1) return i;

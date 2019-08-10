@@ -161,6 +161,7 @@ private:
     List<CgenNode> *children;   // Children of class
     Basicness basic_status;     // `Basic' if class is basic or `NotBasic' otherwise
     Symbol find_cls_method(Symbol method);
+    void protObj(Features features, ostream &os);
 
 public:
     CgenNode(Class_ c,

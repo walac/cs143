@@ -950,6 +950,33 @@ CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTableP ct) :
     stringtable.add_string(name->get_string());          // Add class name to string table
 }
 
+void CgenNode::protObj(Features features, ostream &os)
+{
+    auto default_int = inttable.lookup_string("0");
+    auto default_str = stringtable.lookup_string("");
+
+    for (auto feature: *features) {
+        auto attr = dynamic_cast<attr_class *>(feature);
+        if (attr == nullptr) continue;
+        auto type = attr->type_decl;
+
+        if (*type == *Str) {
+            os << WORD;
+            default_str->code_ref(os);
+        } else if (*type == *Int) {
+            os << WORD;
+            default_int->code_ref(os);
+        } else if (*type == *Bool) {
+            os << WORD;
+            falsebool.code_ref(os);
+        } else {
+            os << WORD << 0;
+        }
+
+        os << " # " << attr->name << endl;
+    }
+}
+
 void CgenNode::code_protObj(int tag, ostream &os)
 {
     os << WORD << "-1" << endl;
@@ -959,30 +986,13 @@ void CgenNode::code_protObj(int tag, ostream &os)
     os << WORD << 4 * (attributes.size() + DEFAULT_OBJFIELDS) << endl;
     os << WORD << name << DISPTAB_SUFFIX << endl;
 
-    auto default_int = inttable.lookup_string("0");
-    auto default_str = stringtable.lookup_string("");
+    vector<CgenNodeP> cls;
+    for (auto c = this; *c->get_name() != *No_class; c = c->parentnd)
+        cls.push_back(c);
 
-    for (auto feature: *features) {
-        auto attr = reinterpret_cast<attr_class *>(feature);
-        if (attr == nullptr) continue;
-        auto type = attr->type_decl;
-
-        if (*type == *Str) {
-            os << WORD;
-            default_str->code_ref(os);
-            os << endl;
-        } else if (*type == *Int) {
-            os << WORD;
-            default_int->code_ref(os);
-            os << endl;
-        } else if (*type == *Bool) {
-            os << WORD;
-            falsebool.code_ref(os);
-            os << endl;
-        } else {
-            os << WORD << 0 << endl;
-        }
-    }
+    for_each(crbegin(cls), crend(cls), [&os](auto class_) {
+        class_->protObj(class_->features, os);
+    });
 }
 
 Symbol CgenNode::find_cls_method(Symbol method)
@@ -990,7 +1000,7 @@ Symbol CgenNode::find_cls_method(Symbol method)
     for (auto cls = this; *cls->name != *No_class; cls = cls->get_parentnd()) {
         auto e = end(*cls->features);
         auto it = find_if(begin(*cls->features), e, [=](auto feature) -> bool {
-            auto meth = reinterpret_cast<method_class*> (feature);
+            auto meth = dynamic_cast<method_class*> (feature);
             if (meth == nullptr) return false;
             return *meth->name == *method;
         });
@@ -1136,9 +1146,12 @@ void static_dispatch_class::code(ostream &s, Context c) {
     emit_jal("_dispatch_abort", s);
     emit_label_def(lnum++, s);
     emit_move(SELF, ACC, s);
-    stringstream meth;
-    meth << type_name->get_string() << '.' << name->get_string();
-    emit_jal(meth.str().c_str(), s);
+    auto cls = sym_map[type_name];
+    emit_partial_load_address(T1, s);
+    emit_disptable_ref(cls->get_name(), s);
+    s << endl;
+    emit_load(T1, cls->lookup_meth(name), T1, s);
+    emit_jalr(T1, s);
     emit_pop(SELF, s);
 }
 

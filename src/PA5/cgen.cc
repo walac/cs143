@@ -1204,6 +1204,14 @@ void loop_class::code(ostream &s, Context c) {
 }
 
 void typcase_class::code(ostream &s, Context c) {
+    expr->code(s, c);
+    emit_bne(ACC, ZERO, lnum, s);
+    auto fname = c.get_so()->get_filename()->get_string();
+    stringtable.add_string(fname);
+    emit_load_string(ACC, stringtable.lookup_string(fname), s);
+    emit_load_imm(T1, curr_lineno, s);
+    emit_jal("_case_abort2", s);
+    emit_label_def(lnum++, s);
 }
 
 void block_class::code(ostream &s, Context c) {

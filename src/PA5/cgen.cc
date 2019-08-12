@@ -1212,10 +1212,30 @@ void typcase_class::code(ostream &s, Context c) {
     emit_load_imm(T1, curr_lineno, s);
     emit_jal("_case_abort2", s);
     emit_label_def(lnum++, s);
-    emit_load(T2, 0, ACC, s);
+    auto success = lnum++;
 
-    for (auto c: *cases) {
+    emit_load(T2, 0, ACC, s);
+    auto case_label = lnum;
+    for (auto cas_: *cases) {
+        auto cas = dynamic_cast<branch_class*>(cas_);
+        assert(cas);
+        s << "# " << cas->name << ": " << cas->type_decl << endl;
+        emit_label_def(case_label, s);
+        case_label = ++lnum;
+        lnum++;
+        emit_load_imm(T1, tag(cas->type_decl), s);
+        emit_bne(T1, T2, case_label, s);
+        c.add_let(cas->name);
+        emit_push(ACC, s);
+        cas->expr->code(s, c);
+        emit_pop(T2, s);
+        emit_branch(success, s);
     }
+
+    emit_label_def(case_label, s);
+    emit_jal("_case_abort", s);
+
+    emit_label_def(success, s);
 }
 
 void block_class::code(ostream &s, Context c) {

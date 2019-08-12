@@ -35,6 +35,15 @@ extern int cgen_debug;
 unordered_map<Symbol, CgenNodeP> sym_map;
 
 static int lnum;
+static vector<Symbol> tags;
+
+static int tag(Symbol p) {
+    auto e = end(tags);
+    auto first = begin(tags);
+    auto low = lower_bound(first, e, p, [](auto a, auto b) { return *a < *b; });
+    assert(low != e && **low == *p);
+    return distance(first, low);
+}
 
 //
 // Three symbols from the semantic analyzer (semant.cc) are used.
@@ -850,15 +859,6 @@ void CgenClassTable::set_relations(CgenNodeP nd)
     parent_node->add_child(nd);
 }
 
-int CgenClassTable::tag(Symbol p) const
-{
-    auto e = end(tags);
-    auto first = begin(tags);
-    auto low = lower_bound(first, e, p, [](auto a, auto b) { return *a < *b; });
-    assert(low != e && **low == *p);
-    return distance(first, low);
-}
-
 void CgenNode::add_child(CgenNodeP n)
 {
     children = new List<CgenNode>(n,children);
@@ -1212,6 +1212,10 @@ void typcase_class::code(ostream &s, Context c) {
     emit_load_imm(T1, curr_lineno, s);
     emit_jal("_case_abort2", s);
     emit_label_def(lnum++, s);
+    emit_load(T2, 0, ACC, s);
+
+    for (auto c: *cases) {
+    }
 }
 
 void block_class::code(ostream &s, Context c) {

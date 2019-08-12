@@ -125,7 +125,6 @@ private:
     int stringclasstag;
     int intclasstag;
     int boolclasstag;
-    vector<Symbol> tags;
 
     // The following methods emit code for
     // constants and global declarations.
@@ -135,7 +134,6 @@ private:
     void code_bools(int);
     void code_select_gc();
     void code_constants();
-    int tag(Symbol p) const;
     void class_nameTab();
 
     // The following creates an inheritance graph from

@@ -1441,6 +1441,14 @@ void new__class::code(ostream &s, Context c) {
 }
 
 void isvoid_class::code(ostream &s, Context c) {
+    e1->code(s, c);
+    auto quit = lnum++;
+    emit_beq(ACC, ZERO, lnum, s);
+    emit_load_bool(ACC, falsebool, s);
+    emit_branch(quit, s);
+    emit_label_def(lnum++, s);
+    emit_load_bool(ACC, truebool, s);
+    emit_label_def(quit, s);
 }
 
 void no_expr_class::code(ostream &s, Context c) {

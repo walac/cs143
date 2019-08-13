@@ -1066,6 +1066,8 @@ void CgenNode::code_init(ostream &os)
     os << endl;
     emit_init_ref(name, os);
     os << LABEL << endl;
+    emit_push(FP, os);
+    emit_move(FP, SP, os);
     emit_push(RA, os);
     if (*parent != *No_class) {
         emit_partial_load_address(T1, os);
@@ -1074,10 +1076,10 @@ void CgenNode::code_init(ostream &os)
         emit_jalr(T1, os);
     }
 
+    Context c(this);
     for (auto feature: *features) {
         auto attr = dynamic_cast<attr_class*>(feature);
         if (attr != nullptr) {
-            Context c(this);
             if (attr->init->get_type()) {
                 os << "# Initializing " << attr->name << endl;
                 attr->init->code(os, c);
@@ -1088,6 +1090,7 @@ void CgenNode::code_init(ostream &os)
     }
 
     emit_pop(RA, os);
+    emit_pop(FP, os);
     emit_return(os);
 }
 
@@ -1225,9 +1228,10 @@ void typcase_class::code(ostream &s, Context c) {
         lnum++;
         emit_load_imm(T1, tag(cas->type_decl), s);
         emit_bne(T1, T2, case_label, s);
-        c.add_let(cas->name);
+        Context c2(c);
+        c2.add_let(cas->name);
         emit_push(ACC, s);
-        cas->expr->code(s, c);
+        cas->expr->code(s, c2);
         emit_pop(T2, s);
         emit_branch(success, s);
     }

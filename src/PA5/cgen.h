@@ -177,6 +177,7 @@ public:
     void code_dispatchTab(ostream &os);
     void code_init(ostream &os);
     void code_methods(ostream &os);
+    void code_tags(ostream &os);
     vector<Symbol> methods;
     vector<Symbol> attributes;
 };

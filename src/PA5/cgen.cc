@@ -904,6 +904,13 @@ void CgenClassTable::code()
         auto cls = lookup(tags[i]);
         cls->code_protObj(i, str);
         cls->code_dispatchTab(str);
+        cls->code_tags(str);
+    }
+
+    str << "Tags" << LABEL << endl;
+    for (decltype(tags.size()) i = 0; i < tags.size(); ++i) {
+        auto cls = lookup(tags[i]);
+        str << WORD << cls->get_name() << "_tags" << endl;
     }
 
     if (cgen_debug) cout << "coding global text" << endl;
@@ -1031,6 +1038,14 @@ void CgenNode::code_dispatchTab(ostream &os)
         emit_method_ref(meth.first, meth.second, os);
         os << endl;
     }
+}
+
+void CgenNode::code_tags(ostream &os) {
+    os << get_name() << "_tags" << LABEL << endl;
+    for (auto cls = this; *cls->get_name() != *No_class; cls = cls->parentnd) {
+        os << WORD << tag(cls->get_name()) << endl;
+    }
+    os << WORD << -1 << endl;
 }
 
 void CgenNode::code_methods(ostream &os)
@@ -1217,7 +1232,21 @@ void typcase_class::code(ostream &s, Context c) {
     emit_label_def(lnum++, s);
     auto success = lnum++;
 
-    emit_load(T2, 0, ACC, s);
+    emit_load(T1, 0, ACC, s);
+    emit_load_imm(T2, 4, s);
+    emit_mul(T1, T1, T2, s);
+    emit_load_address(T2, "Tags", s);
+    emit_add(T3, T1, T2, s);
+    emit_load(T3, 0, T3, s);
+    auto loop = lnum++;
+    emit_label_def(loop, s);
+    emit_load(T2, 0, T3, s);
+    emit_addiu(T3, T3, 4, s);
+    emit_load_imm(T1, -1, s);
+    emit_bne(T2, T1, lnum, s);
+    emit_jal("_case_abort", s);
+    emit_label_def(lnum++, s);
+
     auto case_label = lnum;
     for (auto cas_: *cases) {
         auto cas = dynamic_cast<branch_class*>(cas_);
@@ -1237,7 +1266,7 @@ void typcase_class::code(ostream &s, Context c) {
     }
 
     emit_label_def(case_label, s);
-    emit_jal("_case_abort", s);
+    emit_branch(loop, s);
 
     emit_label_def(success, s);
 }
